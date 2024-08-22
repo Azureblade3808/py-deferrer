@@ -1,0 +1,131 @@
+[tool.isort]
+profile = "black"
+
+case_sensitive = true
+combine_as_imports = true
+reverse_relative = true
+star_first = true
+treat_all_comments_as_code = true
+
+
+[tool.pyright]
+
+# region[Main Configuration Options]
+
+include = ["**/*.ipy", "**/*.ipynb", "**/*.py", "**/*.pyi"]
+stubPath = "__typings__"
+
+pythonVersion = "3.12"
+pythonPlatform = "All"
+
+typeCheckingMode = "strict"
+useLibraryCodeForTypes = false
+
+# endregion
+
+# region[Type Check Diagnostics Settings]
+
+analyzeUnannotatedFunctions = true
+strictParameterNoneValue = false
+enableTypeIgnoreComments = true
+disableBytesTypePromotions = true
+strictListInference = false
+strictDictionaryInference = false
+strictSetInference = false
+deprecateTypingAliases = true
+enableExperimentalFeatures = false
+reportMissingTypeStubs = "none"
+reportMissingModuleSource = "error"
+reportInvalidTypeForm = "error"
+reportMissingImports = "error"
+reportUndefinedVariable = "error"
+reportAssertAlwaysTrue = "error"
+reportInvalidStringEscapeSequence = "error"
+reportInvalidTypeVarUse = "error"
+reportSelfClsParameterName = "warning"
+reportUnsupportedDunderAll = "warning"
+reportUnusedExpression = "none"
+reportWildcardImportFromLibrary = "warning"
+reportAbstractUsage = "error"
+reportArgumentType = "error"
+reportAssertTypeFailure = "error"
+reportAssignmentType = "error"
+reportAttributeAccessIssue = "error"
+reportCallIssue = "error"
+reportGeneralTypeIssues = "error"
+reportInconsistentOverload = "error"
+reportIndexIssue = "error"
+reportInvalidTypeArguments = "error"
+reportNoOverloadImplementation = "error"
+reportOperatorIssue = "error"
+reportOptionalSubscript = "error"
+reportOptionalMemberAccess = "error"
+reportOptionalCall = "error"
+reportOptionalIterable = "error"
+reportOptionalContextManager = "error"
+reportOptionalOperand = "error"
+reportRedeclaration = "error"
+reportReturnType = "error"
+reportTypedDictNotRequiredAccess = "error"
+reportPrivateImportUsage = "error"
+reportUnboundVariable = "error"
+reportUnhashable = "error"
+reportUnusedCoroutine = "error"
+reportUnusedExcept = "error"
+reportFunctionMemberAccess = "warning"
+reportIncompatibleMethodOverride = "error"
+reportIncompatibleVariableOverride = "error"
+reportOverlappingOverload = "none"
+reportPossiblyUnboundVariable = "error"
+reportConstantRedefinition = "error"
+reportDeprecated = "warning"
+reportDuplicateImport = "error"
+reportIncompleteStub = "warning"
+reportInconsistentConstructor = "error"
+reportInvalidStubStatement = "error"
+reportMatchNotExhaustive = "error"
+reportMissingParameterType = "none"
+reportMissingTypeArgument = "none"
+reportPrivateUsage = "warning"
+reportTypeCommentUsage = "error"
+reportUnknownArgumentType = "none"
+reportUnknownLambdaType = "none"
+reportUnknownMemberType = "none"
+reportUnknownParameterType = "none"
+reportUnknownVariableType = "none"
+reportUnnecessaryCast = "none"
+reportUnnecessaryComparison = "none"
+reportUnnecessaryContains = "none"
+reportUnnecessaryIsInstance = "none"
+reportUnusedClass = "warning"
+reportUnusedImport = "warning"
+reportUnusedFunction = "warning"
+reportUnusedVariable = "warning"
+reportUntypedBaseClass = "warning"
+reportUntypedClassDecorator = "none"
+reportUntypedFunctionDecorator = "none"
+reportUntypedNamedTuple = "warning"
+reportCallInDefaultInitializer = "warning"
+reportImplicitOverride = "warning"
+reportImplicitStringConcatenation = "warning"
+reportImportCycles = "none"
+reportMissingSuperCall = "none"
+reportPropertyTypeMismatch = "none"
+reportShadowedImports = "warning"
+reportUninitializedInstanceVariable = "none"
+reportUnnecessaryTypeIgnoreComment = "none"
+reportUnusedCallResult = "error"
+
+# endregion
+
+
+[tool.pytest.ini_options]
+disable_test_id_escaping_and_forfeit_all_rights_to_community_support = true
+
+python_files = [
+    # Package tests.
+    "__test__.py",
+
+    # Per-file tests.
+    "*_test.py",
+]
