@@ -1,0 +1,15 @@
+{
+    "isort.args": [
+        "--profile=black",
+        "--case-sensitive",
+        "--combine-as",
+        "--reverse-relative",
+        "--treat-all-comment-as-code"
+    ],
+    "isort.check": true,
+    "python.analysis.diagnosticMode": "workspace",
+    "python.analysis.include": ["**/*.ipy", "**/*.ipynb", "**/*.py", "**/*.pyi"],
+    "python.analysis.typeCheckingMode": "strict",
+    "python.testing.pytestArgs": ["deferrer"],
+    "python.testing.pytestEnabled": true
+}
