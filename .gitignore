@@ -1,2 +1,6 @@
 # CPython cache directories.
 **/__pycache__/
+
+# Coverage reports.
+/.coverage
+/coverage.*
