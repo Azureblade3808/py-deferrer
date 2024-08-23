@@ -4,7 +4,8 @@ import setuptools
 
 setuptools.setup(
     packages=setuptools.find_packages(
-        where="deferrer",
+        where=".",
+        include=["deferrer"],
         exclude=["__test__", "*_test"],
     ),
     package_data={
