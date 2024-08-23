@@ -5,9 +5,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deferrer"
-version = "0.1.0"
+version = "0.1.1"
 authors = [{ name = "Chris Fu", email = "17433201@qq.com" }]
-description = "`defer` in python 3"
+description = "Fancy `defer` in python 3"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -17,7 +17,7 @@ classifiers = [
 ]
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.12"
+requires-python = ">=3.12, <3.13"
 
 
 [project.urls]
