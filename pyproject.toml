@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deferrer"
-version = "0.1.1"
+version = "0.1.2"
 authors = [{ name = "Chris Fu", email = "17433201@qq.com" }]
 description = "Fancy `defer` in python 3.12"
 classifiers = [
