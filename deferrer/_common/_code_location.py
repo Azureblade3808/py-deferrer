@@ -1,0 +1,10 @@
+from __future__ import annotations
+
+from types import FrameType
+
+
+def get_code_location(frame: FrameType, /) -> str:
+    filename = frame.f_code.co_filename
+    line_number = frame.f_lineno
+    code_location = f"{filename}:{line_number}"
+    return code_location
