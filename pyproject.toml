@@ -1,3 +1,30 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "deferrer"
+version = "0.1.0"
+authors = [{ name = "Chris Fu", email = "17433201@qq.com" }]
+description = "`defer` in python 3"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Development Status :: 3 - Alpha",
+]
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.12"
+
+
+[project.urls]
+Homepage = "https://github.com/Azureblade3808/py-deferrer"
+"Bug Tracker" = "https://github.com/Azureblade3808/py-deferrer/issues"
+
+
 [tool.isort]
 profile = "black"
 
