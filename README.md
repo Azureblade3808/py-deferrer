@@ -25,7 +25,7 @@ There are two designed ways to use `defer`. You may use either of them, or mix t
 ...     defer(print)(3)
 ...     defer(print)(4)
 
->>> f0()
+>>> f()
 2
 4
 3
