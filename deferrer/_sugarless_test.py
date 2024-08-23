@@ -29,6 +29,16 @@ class Tests:
             f()
 
     @staticmethod
+    def test__should_raise__called_more_than_once() -> None:
+        def f() -> None:
+            stub = defer(print)
+            stub()
+            stub()
+
+        with pytest.raises(RuntimeError):
+            f()
+
+    @staticmethod
     def test__should_warn__deferred_exceptions() -> None:
         def f() -> None:
             def do_raise() -> None:

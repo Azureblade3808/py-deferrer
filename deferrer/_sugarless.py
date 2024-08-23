@@ -24,13 +24,17 @@ defer = Defer()
 
 
 class _DeferredCallable[**P]:
+    __slots__ = ("_body", "_code_location", "_has_been_called")
+
     def __init__(self, body: Callable[P, Any], /, code_location: str) -> None:
         self._body: Final = body
-        self._code_location = code_location
-
-    __has_been_called: bool = False
+        self._code_location: Final = code_location
+        self._has_been_called = False
 
     def __call__(self, *args: P.args, **kwargs: P.kwargs) -> None:
+        if self._has_been_called:
+            raise RuntimeError("`defer(...)` gets further called more than once.")
+
         body = self._body
 
         def deferred_call() -> Any:
@@ -40,10 +44,10 @@ class _DeferredCallable[**P]:
         deferred_calls = ensure_deferred_calls(frame)
         deferred_calls.append(deferred_call)
 
-        self.__has_been_called = True
+        self._has_been_called = True
 
     def __del__(self, /) -> None:
-        if not self.__has_been_called:
+        if not self._has_been_called:
             code_location = self._code_location
             message = f"`defer(...)` has never got further called({code_location})."
             warn(message)
