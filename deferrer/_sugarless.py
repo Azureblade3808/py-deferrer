@@ -49,5 +49,5 @@ class _DeferredCallable[**P]:
     def __del__(self, /) -> None:
         if not self._has_been_called:
             code_location = self._code_location
-            message = f"`defer(...)` has never got further called({code_location})."
+            message = f"`defer(...)` has never got further called ({code_location})."
             warn(message)

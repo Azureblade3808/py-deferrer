@@ -44,7 +44,7 @@ class Defer:
                 ""
                 + (
                     ""
-                    + "Method `defer.__bool__()` is called in an unsupported way("
+                    + "Method `defer.__bool__()` is called in an unsupported way ("
                     + code_location
                     + ")."
                 )
