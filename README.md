@@ -11,7 +11,7 @@ You may install `deferrer` by running `pip install deferrer`.
 
 ### Usage
 
-There are two designed way to use `defer`. You may use either of them, or mix them up.
+There are two designed ways to use `defer`. You may use either of them, or mix them up.
 
 #### Sugarless
 
