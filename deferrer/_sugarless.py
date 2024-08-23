@@ -13,8 +13,34 @@ from ._common import ensure_deferred_calls, get_caller_frame, get_code_location
 
 
 class Defer:
+    """
+    Provides `defer` functionality in a sugarless way.
+
+    Examples
+    --------
+    >>> def f():
+    ...     defer(print)(0)
+    ...     defer(print)(1)
+    ...     print(2)
+    ...     defer(print)(3)
+    ...     defer(print)(4)
+
+    >>> f()
+    2
+    4
+    3
+    1
+    0
+    """
+
     @staticmethod
-    def __call__[**P](callable: Callable[P, Any], /) -> _DeferredCallable[P]:
+    def __call__[**P](callable: Callable[P, Any], /) -> Callable[P, None]:
+        """
+        Converts a callable into a deferred callable.
+
+        Return value of the given callable will always be ignored.
+        """
+
         code_location = get_code_location(get_caller_frame())
         deferred_callable = _DeferredCallable(callable, code_location)
         return deferred_callable

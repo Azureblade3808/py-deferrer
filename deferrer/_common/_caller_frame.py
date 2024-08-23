@@ -11,7 +11,31 @@ from ._opcode import Opcode
 
 
 def get_caller_frame() -> FrameType:
+    """
+    Returns the frame of the caller of caller.
+
+    Raises
+    ------
+    If the pending result is a global frame or a class frame, a
+    `RuntimeError` will be raised.
+
+    Examples
+    --------
+    >>> def foo():  # L0
+    ...     def mocked_defer():
+    ...         frame = get_caller_frame()
+    ...         return (
+    ...             frame.f_code.co_name,
+    ...             frame.f_lineno - frame.f_code.co_firstlineno,
+    ...         )
+    ...     print(*mocked_defer())  # L7
+
+    >>> foo()
+    foo 7
+    """
+
     frame = sys._getframe(2)  # pyright: ignore[reportPrivateUsage]
+    frame.f_code.co_firstlineno
 
     if _is_global_frame(frame):
         raise RuntimeError("cannot be used in global scope")
@@ -23,10 +47,18 @@ def get_caller_frame() -> FrameType:
 
 
 def _is_global_frame(frame: FrameType, /) -> bool:
+    """
+    Detects if the given frame is a global frame.
+    """
+
     return frame.f_locals is frame.f_globals
 
 
 def _is_class_frame(frame: FrameType, /) -> bool:
+    """
+    Detects if the given frame is a class frame.
+    """
+
     if (
         True
         and _sequence_has_prefix(frame.f_code.co_consts, _CLASS_CODE_PREFIX_CONSTS)
@@ -45,6 +77,10 @@ def _sequence_has_prefix(
 
 
 class _AnyStr:
+    """
+    An object that equals any `str`.
+    """
+
     @override
     def __eq__(self, other: object, /) -> bool:
         return isinstance(other, str)

@@ -15,6 +15,11 @@ type DeferredCall = Callable[[], Any]
 
 
 class DeferredCalls:
+    """
+    A list-like object that holds deferred calls and automatically runs
+    them in a reversed order when it is being disposed.
+    """
+
     __internal_list: list[DeferredCall]
 
     def __init__(self, /) -> None:
@@ -45,6 +50,11 @@ def ensure_deferred_calls(
     # anything in a local scope.
     __key: Any = object(),  # pyright: ignore[reportCallInDefaultInitializer]
 ) -> DeferredCalls:
+    """
+    Always returns a `DeferredCalls` object for the given frame. Reuses
+    the same object whenever possible.
+    """
+
     f_locals = frame.f_locals
 
     deferred_calls = cast("DeferredCalls | None", f_locals.get(__key, None))

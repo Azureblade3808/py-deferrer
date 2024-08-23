@@ -15,8 +15,37 @@ _MISSING = cast("Any", object())
 
 
 class Defer:
+    """
+    Provides `defer` functionality in a sugarful way.
+
+    Examples
+    --------
+    >>> def f():
+    ...     defer and print(0)
+    ...     defer and print(1)
+    ...     print(2)
+    ...     defer and print(3)
+    ...     defer and print(4)
+
+    >>> f()
+    2
+    4
+    3
+    1
+    0
+    """
+
     @staticmethod
     def __bool__() -> bool:
+        """
+        **DO NOT INVOKE**
+
+        This method is only meant to be called during `defer and ...`.
+
+        If called in other ways, the return value will always be `False`
+        and a warning will be emitted.
+        """
+
         frame = get_caller_frame()
 
         # The usage is `defer and ...` and the corresponding instructions should be:
@@ -60,8 +89,8 @@ class Defer:
         dummy_code_bytes = bytes()
 
         # If the original function has free variables, create a closure based on their
-        # current values, and add a "COPY_FREE_VARS" instruction at the head of the dummy
-        # function.
+        # current values, and add a "COPY_FREE_VARS" instruction at the head of the
+        # dummy function.
         free_var_names = code.co_freevars
         n_free_vars = len(free_var_names)
         if n_free_vars == 0:
@@ -91,14 +120,15 @@ class Defer:
             )
             dummy_consts += (value,)
 
-        # Copy the bytecode of the `...` part in `defer and ...` into the dummy function.
+        # Copy the bytecode of the `...` part in `defer and ...` into the dummy
+        # function.
         n_skipped_bytes = code_bytes[i_code_byte + 1] * 2
         dummy_code_bytes += code_bytes[
             (i_code_byte + 4) : (i_code_byte + 2 + n_skipped_bytes)
         ]
 
-        # The dummy function should return something. The simplest way is to return whatever
-        # value is currently active.
+        # The dummy function should return something. The simplest way is to return
+        # whatever value is currently active.
         dummy_code_bytes += bytes([Opcode.RETURN_VALUE, 0])
 
         # The dummy function will be called with no argument.

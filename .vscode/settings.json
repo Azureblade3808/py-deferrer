@@ -10,6 +10,6 @@
     "python.analysis.diagnosticMode": "workspace",
     "python.analysis.include": ["**/*.ipy", "**/*.ipynb", "**/*.py", "**/*.pyi"],
     "python.analysis.typeCheckingMode": "strict",
-    "python.testing.pytestArgs": ["deferrer", "--cov", "--cov-report=xml"],
+    "python.testing.pytestArgs": ["deferrer", "--doctest-modules", "--cov", "--cov-report=xml"],
     "python.testing.pytestEnabled": true
 }

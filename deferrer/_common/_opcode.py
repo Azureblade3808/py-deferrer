@@ -7,6 +7,10 @@ from enum import IntEnum
 
 
 class Opcode(IntEnum):
+    """
+    All op-code values used in this project.
+    """
+
     COPY_FREE_VARS = opmap["COPY_FREE_VARS"]
     LOAD_CONST = opmap["LOAD_CONST"]
     LOAD_NAME = opmap["LOAD_NAME"]

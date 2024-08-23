@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 name = "deferrer"
 version = "0.1.1"
 authors = [{ name = "Chris Fu", email = "17433201@qq.com" }]
-description = "Fancy `defer` in python 3"
+description = "Fancy `defer` in python 3.12"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
