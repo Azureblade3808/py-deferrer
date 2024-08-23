@@ -27,21 +27,15 @@ def _is_global_frame(frame: FrameType, /) -> bool:
 
 
 def _is_class_frame(frame: FrameType, /) -> bool:
-    code = frame.f_code
+    if (
+        True
+        and _sequence_has_prefix(frame.f_code.co_consts, _CLASS_CODE_PREFIX_CONSTS)
+        and _sequence_has_prefix(frame.f_code.co_names, _CLASS_CODE_PREFIX_NAMES)
+        and _sequence_has_prefix(frame.f_code.co_code, _CLASS_CODE_PREFIX_BYTES)
+    ):
+        return True
 
-    code_consts = code.co_consts
-    if not _sequence_has_prefix(code_consts, _CLASS_CODE_PREFIX_CONSTS):
-        return False
-
-    code_names = code.co_names
-    if not _sequence_has_prefix(code_names, _CLASS_CODE_PREFIX_NAMES):
-        return False
-
-    code_bytes = code.co_code
-    if not _sequence_has_prefix(code_bytes, _CLASS_CODE_PREFIX_BYTES):
-        return False
-
-    return True
+    return False
 
 
 def _sequence_has_prefix(
