@@ -3,7 +3,10 @@
 import setuptools
 
 setuptools.setup(
-    packages=["deferrer"],
+    packages=setuptools.find_packages(
+        where="deferrer",
+        exclude=["__test__", "*_test"],
+    ),
     package_data={
         "deferrer": ["py.typed"],
     },
