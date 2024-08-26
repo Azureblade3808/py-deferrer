@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.12"]
+        python-version: ["3.12.0", "3.12.1", "3.12.2", "3.12.3", "3.12.4", "3.12.5", "3.12", ]
 
     steps:
       - uses: actions/checkout@v4
@@ -36,6 +36,6 @@ jobs:
           pyright
       - name: Test with pytest
         run: |
-          pytest deferrer --doctest-modules --cov
+          pytest
       - name: Coveralls GitHub Action        
         uses: coverallsapp/github-action@v2.3.0          
