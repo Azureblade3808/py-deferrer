@@ -11,7 +11,7 @@ class Tests:
     @staticmethod
     def test__should_raise__in_global_scope() -> None:
         with pytest.raises(RuntimeError):
-            from unimportable import _sugarful_test__defer_in_global_scope as _
+            from . import _sugarful_test__defer_in_global_scope as _
 
     @staticmethod
     def test__should_raise__in_class_scope() -> None:

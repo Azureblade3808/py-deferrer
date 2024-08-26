@@ -5,7 +5,6 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deferrer"
-version = "0.1.4"
 authors = [{ name = "Chris Fu", email = "17433201@qq.com" }]
 description = "Fancy `defer` in python 3.12"
 classifiers = [
@@ -18,6 +17,7 @@ classifiers = [
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.12, <3.13"
+dynamic = ["version"]
 
 
 [project.urls]
@@ -147,8 +147,6 @@ reportUnusedCallResult = "error"
 
 
 [tool.pytest.ini_options]
-disable_test_id_escaping_and_forfeit_all_rights_to_community_support = true
-
 python_files = [
     # Package tests.
     "__test__.py",
@@ -156,3 +154,14 @@ python_files = [
     # Per-file tests.
     "*_test.py",
 ]
+addopts = [
+    "deferrer",
+    "--doctest-modules",
+    "--cov",
+    "--cov-report=xml",
+    "--ignore-glob=*_test__*.py",
+]
+
+
+[tool.setuptools.dynamic]
+version = { attr = "deferrer.__version__" }
