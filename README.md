@@ -13,26 +13,6 @@ You may install `deferrer` by running `pip install deferrer`.
 
 There are two designed ways to use `defer`. You may use either of them, or mix them up.
 
-#### Sugarless
-
-```python
->>> from deferrer import defer
-
->>> def f():
-...     defer(print)(0)
-...     defer(print)(1)
-...     print(2)
-...     defer(print)(3)
-...     defer(print)(4)
-
->>> f()
-2
-4
-3
-1
-0
-```
-
 #### Sugarful
 
 ```python
@@ -51,4 +31,26 @@ There are two designed ways to use `defer`. You may use either of them, or mix t
 3
 1
 0
+
+```
+
+#### Sugarless
+
+```python
+>>> from deferrer import defer
+
+>>> def f():
+...     defer(print)(0)
+...     defer(print)(1)
+...     print(2)
+...     defer(print)(3)
+...     defer(print)(4)
+
+>>> f()
+2
+4
+3
+1
+0
+
 ```

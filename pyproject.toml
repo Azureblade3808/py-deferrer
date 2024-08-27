@@ -150,13 +150,12 @@ reportUnusedCallResult = "error"
 python_files = [
     # Package tests.
     "__test__.py",
-
     # Per-file tests.
     "*_test.py",
 ]
 addopts = [
-    "deferrer",
     "--doctest-modules",
+    "--doctest-glob=*.md",
     "--cov",
     "--cov-report=xml",
     "--ignore-glob=*_test__*.py",
