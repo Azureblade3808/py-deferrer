@@ -125,3 +125,31 @@ RuntimeError: ...
 0
 
 ```
+
+If you don't want this behavior, you may try embedded functions with non-local variables.
+
+```python
+>>> from deferrer import defer
+
+>>> def f():
+...     x = 0
+...
+...     @defer
+...     def _():
+...         print(x)
+...
+...     x = 1
+...
+...     @defer
+...     def _():
+...         print(x)
+...
+...     x = 2
+...     print(x)
+
+>>> f()
+2
+2
+2
+
+```
