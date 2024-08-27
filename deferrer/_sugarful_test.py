@@ -169,3 +169,31 @@ class Tests:
 
         nums = f()
         assert nums == [0, 6, 5, 4, 3, 2, 1]
+
+    @staticmethod
+    def test__should_work__case_5() -> None:
+        result: int | None = None
+
+        def f() -> None:
+            x = 0
+
+            def f_0() -> None:
+                nonlocal result
+                result = x
+
+            defer and f_0()
+
+            def f_1() -> None:
+                nonlocal x
+                x = 1
+
+            defer and f_1()
+
+            def f_2() -> None:
+                nonlocal x
+                x = 2
+
+            defer and f_2()
+
+        f()
+        assert result == 1
