@@ -2,181 +2,166 @@ from __future__ import annotations
 
 __all__ = []
 
+from typing import Any, cast
+
 import pytest
 
 from ._sugarless import *
 
+_MISSING = cast("Any", object())
 
-class Tests:
+
+class FunctionalityTests:
     @staticmethod
-    def test__should_raise__in_global_scope() -> None:
-        with pytest.raises(RuntimeError):
-            from . import _sugarless_test__defer_in_global_scope as _
-
-    @staticmethod
-    def test__should_raise__in_class_scope() -> None:
-        with pytest.raises(RuntimeError):
-
-            class _:
-                defer(print)()
-
-    @staticmethod
-    def test__should_warn__not_called() -> None:
-        def f() -> None:
-            defer(print)  # pyright: ignore[reportUnusedCallResult]
-
-        with pytest.warns():
-            f()
-
-    @staticmethod
-    def test__should_raise__called_more_than_once() -> None:
-        def f() -> None:
-            stub = defer(print)
-            stub()
-            stub()
-
-        with pytest.raises(RuntimeError):
-            f()
-
-    @staticmethod
-    def test__should_warn__deferred_exceptions() -> None:
-        def f() -> None:
-            def do_raise() -> None:
-                raise
-
-            defer(do_raise)()
-
-        with pytest.warns():
-            f()
-
-    @staticmethod
-    def test__should_work__case_0() -> None:
-        nums: list[int] = []
+    def test_0() -> None:
+        x: int = _MISSING
+        nums: list[int] = _MISSING
 
         def f() -> None:
             nonlocal nums
+
             nums = []
+            assert nums == []
+
             defer(nums.append)(1)
             defer(nums.append)(2)
-            defer(nums.append)(3)
             assert nums == []
-            nums.append(0)
-            assert nums == [0]
+
+            nums.append(x)
+            assert nums == [x]
+
+            defer(nums.append)(3)
             defer(nums.append)(4)
-            defer(nums.append)(5)
-            defer(nums.append)(6)
-            assert nums == [0]
+            assert nums == [x]
 
+        x = 0
         f()
-        assert nums == [0, 6, 5, 4, 3, 2, 1]
+        assert nums == [0, 4, 3, 2, 1]
 
+        x = -1
         f()
-        assert nums == [0, 6, 5, 4, 3, 2, 1]
+        assert nums == [-1, 4, 3, 2, 1]
 
     @staticmethod
-    def test__should_work__case_1() -> None:
-        nums: list[int] = []
+    def test_1() -> None:
+        nums: list[int] = _MISSING
 
         def f(x: int) -> None:
             nonlocal nums
+
             nums = []
+            assert nums == []
+
             defer(nums.append)(1)
             defer(nums.append)(2)
-            defer(nums.append)(3)
             assert nums == []
+
             nums.append(x)
             assert nums == [x]
+
+            defer(nums.append)(3)
             defer(nums.append)(4)
-            defer(nums.append)(5)
-            defer(nums.append)(6)
             assert nums == [x]
 
         f(0)
-        assert nums == [0, 6, 5, 4, 3, 2, 1]
+        assert nums == [0, 4, 3, 2, 1]
 
         f(-1)
-        assert nums == [-1, 6, 5, 4, 3, 2, 1]
+        assert nums == [-1, 4, 3, 2, 1]
 
     @staticmethod
-    def test__should_work__case_2() -> None:
-        nums: list[int] = []
+    def test_2() -> None:
+        nums: list[int] = _MISSING
 
         def f(x: int = 0) -> None:
             nonlocal nums
+
             nums = []
+            assert nums == []
+
             defer(nums.append)(1)
             defer(nums.append)(2)
-            defer(nums.append)(3)
             assert nums == []
+
             nums.append(x)
             assert nums == [x]
+
+            defer(nums.append)(3)
             defer(nums.append)(4)
-            defer(nums.append)(5)
-            defer(nums.append)(6)
             assert nums == [x]
 
         f()
-        assert nums == [0, 6, 5, 4, 3, 2, 1]
+        assert nums == [0, 4, 3, 2, 1]
 
         f(0)
-        assert nums == [0, 6, 5, 4, 3, 2, 1]
+        assert nums == [0, 4, 3, 2, 1]
 
         f(-1)
-        assert nums == [-1, 6, 5, 4, 3, 2, 1]
+        assert nums == [-1, 4, 3, 2, 1]
 
     @staticmethod
-    def test__should_work__case_3() -> None:
-        nums: list[int] = []
+    def test_3() -> None:
+        x: int = _MISSING
+        nums: list[int] = _MISSING
 
         def f() -> None:
             nonlocal nums
+
             nums = []
+            assert nums == []
+
             defer(nums.append)(1)
             defer(nums.append)(2)
-            defer(nums.append)(3)
             assert nums == []
-            nums.append(0)
+
+            nums.append(x)
             raise
-            nums.append(-1)
-            assert nums == [0]
+
+            defer(nums.append)(3)
             defer(nums.append)(4)
-            defer(nums.append)(5)
-            defer(nums.append)(6)
-            assert nums == [0]
 
+        x = 0
         with pytest.raises(Exception):
             f()
-        assert nums == [0, 3, 2, 1]
+        assert nums == [0, 2, 1]
 
+        x = -1
         with pytest.raises(Exception):
             f()
-        assert nums == [0, 3, 2, 1]
+        assert nums == [-1, 2, 1]
 
     @staticmethod
-    def test__should_work__case_4() -> None:
+    def test_4() -> None:
+        x: int = _MISSING
+
         def f() -> list[int]:
             nums: list[int] = []
+            assert nums == []
+
             defer(nums.append)(1)
             defer(nums.append)(2)
-            defer(nums.append)(3)
             assert nums == []
-            nums.append(0)
-            assert nums == [0]
+
+            nums.append(x)
+            assert nums == [x]
+
+            defer(nums.append)(3)
             defer(nums.append)(4)
-            defer(nums.append)(5)
-            defer(nums.append)(6)
-            assert nums == [0]
+            assert nums == [x]
+
             return nums
 
+        x = 0
         nums = f()
-        assert nums == [0, 6, 5, 4, 3, 2, 1]
+        assert nums == [0, 4, 3, 2, 1]
 
+        x = -1
         nums = f()
-        assert nums == [0, 6, 5, 4, 3, 2, 1]
+        assert nums == [-1, 4, 3, 2, 1]
 
     @staticmethod
-    def test__should_work__case_5() -> None:
-        result: int | None = None
+    def test_5() -> None:
+        result: int = _MISSING
 
         def f() -> None:
             x = 0
@@ -201,3 +186,58 @@ class Tests:
 
         f()
         assert result == 1
+
+
+class UsageTests:
+    @staticmethod
+    def test__should_raise__used_in_global_scope() -> None:
+        with pytest.raises(RuntimeError):
+            from . import _sugarless_test__used_in_global_scope as _
+
+    @staticmethod
+    def test__should_raise__used_in_class_scope() -> None:
+        with pytest.raises(RuntimeError):
+
+            class _:
+                defer(print)()
+
+    @staticmethod
+    def test__should_warn__not_further_called() -> None:
+        def f_0() -> None:
+            def inner() -> None:
+                pass
+
+            defer(inner)  # pyright: ignore[reportUnusedCallResult]
+
+        # This should work because `f_0.inner` can be called with no argument.
+        f_0()
+
+        def f_1() -> None:
+            def inner(x: int) -> None: ...
+
+            defer(inner)  # pyright: ignore[reportUnusedCallResult]
+
+        # This should not work because `f_1.inner` cannot be called with no argument.
+        with pytest.warns(UserWarning, match="has never got further called"):
+            f_1()
+
+    @staticmethod
+    def test__should_raise__called_more_than_once() -> None:
+        def f() -> None:
+            stub = defer(lambda: None)
+            stub()
+            stub()
+
+        with pytest.raises(RuntimeError):
+            f()
+
+    @staticmethod
+    def test__should_warn__type_error_created_by_user() -> None:
+        def f() -> None:
+            @defer
+            def _() -> None:
+                raise TypeError()
+
+        # The `TypeError` should be raised as a warning because it is created by user.
+        with pytest.warns(match="TypeError"):
+            f()

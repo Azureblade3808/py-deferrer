@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-__all__ = []
-
 from typing import Any, cast
 
 import pytest
 
-from ._sugarful import *
+from ._mixed import *
 
 _MISSING = cast("Any", object())
 
@@ -24,14 +22,14 @@ class FunctionalityTests:
             assert nums == []
 
             defer and nums.append(1)
-            defer and nums.append(2)
+            defer(nums.append)(2)
             assert nums == []
 
             nums.append(x)
             assert nums == [x]
 
             defer and nums.append(3)
-            defer and nums.append(4)
+            defer(nums.append)(4)
             assert nums == [x]
 
         x = 0
@@ -53,14 +51,14 @@ class FunctionalityTests:
             assert nums == []
 
             defer and nums.append(1)
-            defer and nums.append(2)
+            defer(nums.append)(2)
             assert nums == []
 
             nums.append(x)
             assert nums == [x]
 
             defer and nums.append(3)
-            defer and nums.append(4)
+            defer(nums.append)(4)
             assert nums == [x]
 
         f(0)
@@ -80,14 +78,14 @@ class FunctionalityTests:
             assert nums == []
 
             defer and nums.append(1)
-            defer and nums.append(2)
+            defer(nums.append)(2)
             assert nums == []
 
             nums.append(x)
             assert nums == [x]
 
             defer and nums.append(3)
-            defer and nums.append(4)
+            defer(nums.append)(4)
             assert nums == [x]
 
         f()
@@ -111,14 +109,14 @@ class FunctionalityTests:
             assert nums == []
 
             defer and nums.append(1)
-            defer and nums.append(2)
+            defer(nums.append)(2)
             assert nums == []
 
             nums.append(x)
             raise
 
             defer and nums.append(3)
-            defer and nums.append(4)
+            defer(nums.append)(4)
 
         x = 0
         with pytest.raises(Exception):
@@ -139,14 +137,14 @@ class FunctionalityTests:
             assert nums == []
 
             defer and nums.append(1)
-            defer and nums.append(2)
+            defer(nums.append)(2)
             assert nums == []
 
             nums.append(x)
             assert nums == [x]
 
             defer and nums.append(3)
-            defer and nums.append(4)
+            defer(nums.append)(4)
             assert nums == [x]
 
             return nums
@@ -186,31 +184,3 @@ class FunctionalityTests:
 
         f()
         assert result == 1
-
-
-class UsageTests:
-    @staticmethod
-    def test__should_raise__used_in_global_scope() -> None:
-        with pytest.raises(RuntimeError):
-            from . import _sugarful_test__used_in_global_scope as _
-
-    @staticmethod
-    def test__should_raise__used_in_class_scope() -> None:
-        with pytest.raises(RuntimeError):
-
-            class _:
-                defer and print()
-
-    @staticmethod
-    def test__should_warn__unsupported_bool_call() -> None:
-        def f_0() -> None:
-            defer or print()
-
-        with pytest.warns():
-            f_0()
-
-        def f_1() -> None:
-            __ = bool(defer)
-
-        with pytest.warns():
-            f_1()

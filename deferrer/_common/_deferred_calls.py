@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 __all__ = [
+    "AnyDeferredCall",
     "DeferredCall",
     "DeferredCalls",
     "ensure_deferred_calls",
@@ -8,10 +9,29 @@ __all__ = [
 
 from collections.abc import Callable
 from types import FrameType
-from typing import Any, cast
+from typing import Any, Final, Protocol, cast, override
 from warnings import warn
 
-type DeferredCall = Callable[[], Any]
+
+class DeferredCall(Protocol):
+    def invoke(self, /) -> None: ...
+
+
+class AnyDeferredCall(DeferredCall):
+    """
+    A type-erasing implementation of `DeferredCall`.
+    """
+
+    __slots__ = "_body"
+
+    _body: Final[Callable[[], Any]]
+
+    def __init__(self, body: Callable[[], Any]) -> None:
+        self._body = body
+
+    @override
+    def invoke(self) -> None:
+        self._body()
 
 
 class DeferredCalls:
@@ -33,13 +53,14 @@ class DeferredCalls:
         # order, and translate all exceptions into warnings.
         internal_list = self.__internal_list
         while len(internal_list) > 0:
-            call = internal_list.pop()
+            deferred_call = internal_list.pop()
 
             try:
-                call()
+                deferred_call.invoke()
             except Exception as e:
-                # Treat the exception as a warning.
-                warn(Warning(e))
+                # Exceptions that occur in `__del__` cannot be raised. So we wrap them
+                # as warnings.
+                warn(repr(e))
 
 
 def ensure_deferred_calls(
