@@ -147,12 +147,8 @@ reportUnusedCallResult = "error"
 
 
 [tool.pytest.ini_options]
-python_files = [
-    # Package tests.
-    "__test__.py",
-    # Per-file tests.
-    "*_test.py",
-]
+python_files = ["*_test.py"]
+python_classes = ["*Tests"]
 addopts = [
     "--doctest-modules",
     "--doctest-glob=*.md",

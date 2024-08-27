@@ -9,7 +9,13 @@ from types import CellType, FunctionType
 from typing import Any, cast
 from warnings import warn
 
-from ._common import Opcode, ensure_deferred_calls, get_caller_frame, get_code_location
+from ._common import (
+    AnyDeferredCall,
+    Opcode,
+    ensure_deferred_calls,
+    get_caller_frame,
+    get_code_location,
+)
 
 _MISSING = cast("Any", object())
 
@@ -143,16 +149,7 @@ class Defer:
         new_function = FunctionType(
             code=dummy_code, globals=global_scope, closure=dummy_closure
         )
-
-        if __debug__:
-
-            # This function exists to provide a place for breakpoints in case that
-            # `new_function` should fail to work.
-            def deferred_call() -> Any:
-                return new_function()
-
-        else:
-            deferred_call = new_function
+        deferred_call = AnyDeferredCall(new_function)
 
         deferred_calls = ensure_deferred_calls(frame)
         deferred_calls.append(deferred_call)
