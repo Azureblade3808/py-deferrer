@@ -9,12 +9,8 @@ from collections.abc import Callable
 from typing import Any, Final, override
 from warnings import warn
 
-from ._common import (
-    DeferredCall,
-    ensure_deferred_calls,
-    get_caller_frame,
-    get_code_location,
-)
+from .._scope import DeferScope
+from .._support import DeferredCall, get_caller_frame, get_code_location
 
 
 class Defer:
@@ -51,7 +47,7 @@ class Defer:
 
         deferred_callable = _DeferredCallable(callable, code_location)
 
-        deferred_calls = ensure_deferred_calls(frame)
+        deferred_calls = DeferScope.get_deferred_calls(frame)
         deferred_calls.append(deferred_callable)
 
         return deferred_callable
