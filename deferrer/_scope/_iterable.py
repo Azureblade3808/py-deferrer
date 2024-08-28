@@ -27,8 +27,8 @@ class DeferScopeIterable(Iterable[_E_co], Generic[_E_co]):
         if frame is _MISSING:
             frame = get_caller_frame()
 
-        self._wrapped: Final = wrapped
-        self._frame: Final = frame
+        self._wrapped = wrapped
+        self._frame = frame
 
     @override
     def __iter__(self, /) -> Iterator[_E_co]:

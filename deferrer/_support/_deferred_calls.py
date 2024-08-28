@@ -12,6 +12,8 @@ from types import FrameType
 from typing import Any, Final, cast, override
 from warnings import warn
 
+from ._frame import is_class_frame, is_global_frame
+
 
 class DeferredCall(ABC):
     __slots__ = ()
@@ -49,6 +51,12 @@ class DeferredCalls:
 
     @staticmethod
     def ensure_in_frame(frame: FrameType, /) -> DeferredCalls:
+        if is_global_frame(frame):
+            raise RuntimeError("cannot be used in global scope")
+
+        if is_class_frame(frame):
+            raise RuntimeError("cannot be used in class scope")
+
         key = DeferredCalls._key
 
         local_scope = frame.f_locals
