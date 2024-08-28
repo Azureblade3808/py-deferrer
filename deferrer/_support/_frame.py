@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-__all__ = ["get_caller_frame"]
+__all__ = [
+    "get_caller_frame",
+    "is_class_frame",
+    "is_global_frame",
+]
 
 import sys
 from collections.abc import Sequence
@@ -13,11 +17,6 @@ from ._opcode import Opcode
 def get_caller_frame() -> FrameType:
     """
     Returns the frame of the caller of caller.
-
-    Raises
-    ------
-    If the pending result is a global frame or a class frame, a
-    `RuntimeError` will be raised.
 
     Examples
     --------
@@ -35,18 +34,10 @@ def get_caller_frame() -> FrameType:
     """
 
     frame = sys._getframe(2)  # pyright: ignore[reportPrivateUsage]
-    frame.f_code.co_firstlineno
-
-    if _is_global_frame(frame):
-        raise RuntimeError("cannot be used in global scope")
-
-    if _is_class_frame(frame):
-        raise RuntimeError("cannot be used in class scope")
-
     return frame
 
 
-def _is_global_frame(frame: FrameType, /) -> bool:
+def is_global_frame(frame: FrameType, /) -> bool:
     """
     Detects if the given frame is a global frame.
     """
@@ -54,7 +45,7 @@ def _is_global_frame(frame: FrameType, /) -> bool:
     return frame.f_locals is frame.f_globals
 
 
-def _is_class_frame(frame: FrameType, /) -> bool:
+def is_class_frame(frame: FrameType, /) -> bool:
     """
     Detects if the given frame is a class frame.
     """

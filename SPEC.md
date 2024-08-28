@@ -153,3 +153,33 @@ If you don't want this behavior, you may try embedded functions with non-local v
 2
 
 ```
+
+## `defer_scope` can be used to explicitly declare where the deferred actions should be drained
+
+```python
+>>> from deferrer import defer, defer_scope
+
+>>> with defer_scope():
+...     __ = defer and print(0)  # If the result is not used, it will be printed.
+...     print(1)
+1
+0
+
+```
+
+## `defer_scope` can be used to wrap an iterable and drain deferred actions when each loop ends
+
+```python
+>>> from deferrer import defer, defer_scope
+
+>>> for i in defer_scope(range(3)):
+...     __ = defer and print(-i)  # If the result is not used, it will be printed.
+...     print(i)
+0
+0
+1
+-1
+2
+-2
+
+```

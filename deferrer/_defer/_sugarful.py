@@ -9,13 +9,8 @@ from types import CellType, FunctionType
 from typing import Any, cast
 from warnings import warn
 
-from ._common import (
-    AnyDeferredCall,
-    Opcode,
-    ensure_deferred_calls,
-    get_caller_frame,
-    get_code_location,
-)
+from .._scope import DeferScope
+from .._support import AnyDeferredCall, Opcode, get_caller_frame, get_code_location
 
 _MISSING = cast("Any", object())
 
@@ -40,6 +35,8 @@ class Defer:
     1
     0
     """
+
+    __slots__ = ()
 
     @staticmethod
     def __bool__() -> bool:
@@ -151,7 +148,7 @@ class Defer:
         )
         deferred_call = AnyDeferredCall(new_function)
 
-        deferred_calls = ensure_deferred_calls(frame)
+        deferred_calls = DeferScope.get_deferred_calls(frame)
         deferred_calls.append(deferred_call)
 
         return False
