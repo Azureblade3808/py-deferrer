@@ -36,6 +36,8 @@ class Defer:
     0
     """
 
+    __slots__ = ()
+
     @staticmethod
     def __bool__() -> bool:
         """

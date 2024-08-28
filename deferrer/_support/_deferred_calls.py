@@ -14,6 +14,8 @@ from warnings import warn
 
 
 class DeferredCall(ABC):
+    __slots__ = ()
+
     @abstractmethod
     def invoke(self, /) -> None: ...
 
@@ -23,7 +25,7 @@ class AnyDeferredCall(DeferredCall):
     A type-erasing implementation of `DeferredCall`.
     """
 
-    __slots__ = "_body"
+    __slots__ = ("_body",)
 
     _body: Final[Callable[[], Any]]
 

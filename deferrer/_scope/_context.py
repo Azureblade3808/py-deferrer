@@ -26,6 +26,8 @@ class DeferScope(AbstractContextManager):
         deferred_calls = deferred_calls_list[-1]
         return deferred_calls
 
+    __slots__ = ("_frame",)
+
     _frame: Final[FrameType]
 
     def __init__(self, /, frame: FrameType = _MISSING) -> None:

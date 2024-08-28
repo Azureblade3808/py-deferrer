@@ -43,7 +43,7 @@ class Defer(_sugarful.Defer, _sugarless.Defer):
     0
     """
 
-    pass
+    __slots__ = ()
 
 
 defer = Defer()

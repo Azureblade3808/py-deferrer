@@ -16,6 +16,11 @@ _MISSING = cast("Any", object())
 
 
 class DeferScopeIterable(Iterable[_E_co], Generic[_E_co]):
+    __slots__ = ("_wrapped", "_frame")
+
+    _wrapped: Final[Iterable[_E_co]]
+    _frame: Final[FrameType]
+
     def __init__(
         self, wrapped: Iterable[_E_co], /, frame: FrameType = _MISSING
     ) -> None:

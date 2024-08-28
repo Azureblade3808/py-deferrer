@@ -52,6 +52,8 @@ class Defer:
 
         return deferred_callable
 
+    __slots__ = ()
+
 
 defer = Defer()
 
