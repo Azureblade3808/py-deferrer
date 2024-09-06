@@ -1,34 +1,50 @@
 from __future__ import annotations
 
-__all__ = [
-    "Defer",
-    "defer",
-]
+__all__ = ["defer"]
 
+from collections.abc import Callable
 from types import CellType, FunctionType
-from typing import Any, cast
+from typing import Any, Final, Literal, cast, final
 from warnings import warn
 
-from .._scope import DeferScope
-from .._support import AnyDeferredCall, Opcode, get_caller_frame, get_code_location
+from ._defer_scope import ensure_deferred_actions
+from ._deferred_actions import DeferredAction
+from ._opcode import Opcode
+from ._code_location import get_code_location
+from ._frame import get_outer_frame
 
 _MISSING = cast("Any", object())
 
 
+@final
 class Defer:
     """
-    Provides `defer` functionality in a sugarful way.
+    Provides `defer` functionality in both sugarful and sugarless ways.
 
     Examples
     --------
-    >>> def f():
+    >>> def f_0():
     ...     defer and print(0)
     ...     defer and print(1)
     ...     print(2)
     ...     defer and print(3)
     ...     defer and print(4)
 
-    >>> f()
+    >>> f_0()
+    2
+    4
+    3
+    1
+    0
+
+    >>> def f_1():
+    ...     defer(print)(0)
+    ...     defer(print)(1)
+    ...     print(2)
+    ...     defer(print)(3)
+    ...     defer(print)(4)
+
+    >>> f_1()
     2
     4
     3
@@ -36,22 +52,20 @@ class Defer:
     0
     """
 
-    __slots__ = ()
-
     @staticmethod
-    def __bool__() -> bool:
+    def __bool__() -> Literal[False]:
         """
         **DO NOT INVOKE**
 
-        This method is only meant to be called during `defer and ...`.
+        This method is only meant to be used during `defer and ...`.
 
-        If called in other ways, the return value will always be `False`
+        If used in other ways, the return value will always be `False`
         and a warning will be emitted.
         """
 
-        frame = get_caller_frame()
+        frame = get_outer_frame()
 
-        # The usage is `defer and ...` and the corresponding instructions should be:
+        # The usage is `defer and ...` and the typical instructions should be like:
         # ```
         #     LOAD_GLOBAL ? (defer)
         #     COPY
@@ -60,7 +74,7 @@ class Defer:
         #     <???>
         # ```
         # The current instruction is at the line prefixed by "-->", and the "<???>" part
-        # stands for the `...` part in `defer and ...`.
+        # stands for the RHS part in `defer and ...`.
         code = frame.f_code
         code_bytes = code.co_code
         i_code_byte = frame.f_lasti
@@ -146,12 +160,90 @@ class Defer:
         new_function = FunctionType(
             code=dummy_code, globals=global_scope, closure=dummy_closure
         )
-        deferred_call = AnyDeferredCall(new_function)
+        deferred_call = _DeferredCall(new_function)
 
-        deferred_calls = DeferScope.get_deferred_calls(frame)
-        deferred_calls.append(deferred_call)
+        deferred_actions = ensure_deferred_actions(frame)
+        deferred_actions.append(deferred_call)
 
         return False
 
+    @staticmethod
+    def __call__[**P](callable: Callable[P, Any], /) -> Callable[P, None]:
+        """
+        Converts a callable into a deferred callable.
+
+        Return value of the given callable will always be ignored.
+        """
+
+        frame = get_outer_frame()
+        code_location = get_code_location(frame)
+
+        deferred_callable = _DeferredCallable(callable, code_location)
+
+        deferred_actions = ensure_deferred_actions(frame)
+        deferred_actions.append(deferred_callable)
+
+        return deferred_callable
+
 
 defer = Defer()
+
+
+@final
+class _DeferredCall(DeferredAction):
+    def __init__(self, body: Callable[[], Any], /) -> None:
+        self._body: Final = body
+
+    def perform(self, /) -> None:
+        self._body()
+
+
+@final
+class _DeferredCallable[**P](DeferredAction):
+    _body: Final[Callable[..., Any]]
+    _code_location: Final[str]
+
+    _args_and_kwargs: tuple[tuple[Any, ...], dict[str, Any]] | None
+
+    def __init__(self, body: Callable[P, Any], /, code_location: str) -> None:
+        self._body = body
+        self._code_location = code_location
+
+        self._args_and_kwargs = None
+
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> None:
+        if self._args_and_kwargs is not None:
+            raise RuntimeError("`defer(...)` gets further called more than once.")
+
+        self._args_and_kwargs = (args, kwargs)
+
+    def perform(self, /) -> None:
+        body = self._body
+        args_and_kwargs = self._args_and_kwargs
+
+        if args_and_kwargs is not None:
+            args, kwargs = args_and_kwargs
+            body(*args, **kwargs)
+            return
+
+        try:
+            body()
+        except Exception as e:
+            if isinstance(e, TypeError):
+                traceback = e.__traceback__
+                assert traceback is not None
+
+                if traceback.tb_next is None:
+                    # This `TypeError` was raised on function call, which means that
+                    # there was a signature error.
+                    # It is typically because a deferred callable with at least one
+                    # required argument doesn't ever get further called with appropriate
+                    # arguments.
+                    code_location = self._code_location
+                    message = (
+                        f"`defer(...)` has never got further called ({code_location})."
+                    )
+                    warn(message)
+                    return
+
+            raise e

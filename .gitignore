@@ -4,3 +4,7 @@
 # Coverage reports.
 /.coverage
 /coverage.*
+
+# Building artifacts.
+/dist
+*.egg-info
