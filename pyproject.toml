@@ -163,5 +163,9 @@ addopts = [
 ]
 
 
+[tool.setuptools]
+packages = ["deferrer"]
+
+
 [tool.setuptools.dynamic]
 version = { attr = "deferrer.__version__" }
