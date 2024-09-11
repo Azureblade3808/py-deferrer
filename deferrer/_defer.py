@@ -2,6 +2,7 @@ from __future__ import annotations
 
 __all__ = ["defer"]
 
+import sys
 from collections.abc import Callable
 from types import CellType, FunctionType
 from typing import Any, Final, Generic, Literal, ParamSpec, cast, final
@@ -12,6 +13,7 @@ from ._defer_scope import ensure_deferred_actions
 from ._deferred_actions import DeferredAction
 from ._frame import get_outer_frame
 from ._opcode import Opcode
+from ._sequence_matching import WILDCARD, sequence_has_prefix
 
 _P = ParamSpec("_P")
 
@@ -25,12 +27,18 @@ class Defer:
 
     Examples
     --------
+    >>> import sys
+    >>> from deferrer import defer_scope
+
     >>> def f_0():
     ...     defer and print(0)
     ...     defer and print(1)
     ...     print(2)
     ...     defer and print(3)
     ...     defer and print(4)
+
+    >>> if sys.version_info < (3, 12):
+    ...     f_0 = defer_scope(f_0)
 
     >>> f_0()
     2
@@ -45,6 +53,9 @@ class Defer:
     ...     print(2)
     ...     defer(print)(3)
     ...     defer(print)(4)
+
+    >>> if sys.version_info < (3, 12):
+    ...     f_1 = defer_scope(f_1)
 
     >>> f_1()
     2
@@ -68,6 +79,7 @@ class Defer:
         frame = get_outer_frame()
 
         # The usage is `defer and ...` and the typical instructions should be like:
+        #
         # ```
         #     LOAD_GLOBAL ? (defer)
         #     COPY
@@ -75,17 +87,38 @@ class Defer:
         #     POP_TOP
         #     <???>
         # ```
+        # (Python 3.12)
+        #
+        # ```
+        #     LOAD_GLOBAL ? (defer)
+        # --> JUMP_IF_FALSE_OR_POP ?
+        #     <???>
+        # ```
+        # (Python 3.11)
+        #
         # The current instruction is at the line prefixed by "-->", and the "<???>" part
         # stands for the RHS part in `defer and ...`.
+        if sys.version_info >= (3, 12):
+            expected_code_bytes_prefix = (
+                Opcode.POP_JUMP_IF_FALSE,
+                WILDCARD,
+                Opcode.POP_TOP,
+                0,
+            )
+            rhs_part_offset = 2
+        else:
+            expected_code_bytes_prefix = (
+                Opcode.JUMP_IF_FALSE_OR_POP,
+                WILDCARD,
+            )
+            rhs_part_offset = 0
+
         code = frame.f_code
         code_bytes = code.co_code
         i_code_byte = frame.f_lasti
-        if not (
-            True
-            and len(code_bytes) - i_code_byte >= 4
-            and code_bytes[i_code_byte + 0] == Opcode.POP_JUMP_IF_FALSE
-            and code_bytes[i_code_byte + 2] == Opcode.POP_TOP
-            and code_bytes[i_code_byte + 3] == 0
+
+        if not sequence_has_prefix(
+            code_bytes[i_code_byte:], expected_code_bytes_prefix
         ):
             code_location = get_code_location(frame)
             message = (
@@ -125,6 +158,8 @@ class Defer:
             )
             dummy_code_bytes += bytes([Opcode.COPY_FREE_VARS, n_free_vars])
 
+        dummy_code_bytes += bytes([Opcode.RESUME, 0])
+
         # If the original function has local variables, pass their current values by
         # appending these values to constants and using some instruction pairs of
         # "LOAD_CONST" and "STORE_FAST".
@@ -143,7 +178,7 @@ class Defer:
         # function.
         n_skipped_bytes = code_bytes[i_code_byte + 1] * 2
         dummy_code_bytes += code_bytes[
-            (i_code_byte + 4) : (i_code_byte + 2 + n_skipped_bytes)
+            (i_code_byte + 2 + rhs_part_offset) : (i_code_byte + 2 + n_skipped_bytes)
         ]
 
         # The dummy function should return something. The simplest way is to return

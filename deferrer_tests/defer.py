@@ -1,19 +1,21 @@
 from __future__ import annotations
 
+import sys
 
-def defer_is_not_allowed_in_module_level() -> None:
+import pytest
+
+
+def defer_is_not_allowed_at_module_level() -> None:
     """
     For `defer` to work, the local scope where `defer` gets used need to
     eventually get disposed with everything in it released at the same
     time.
 
-    If `defer` is used in module level, the local scope is the global
+    If `defer` is used at module level, the local scope is the global
     scope and will never get disposed in time.
 
     Therefore, an exception is raised to prevent such usages.
     """
-
-    import pytest
 
     with pytest.raises(Exception) as exc_info:
         from deferrer_tests.samples import sugarful_without_defer_scope as _
@@ -24,19 +26,17 @@ def defer_is_not_allowed_in_module_level() -> None:
     assert not exc_info.errisinstance(ImportError)
 
 
-def defer_is_not_allowed_in_class_level() -> None:
+def defer_is_not_allowed_at_class_level() -> None:
     """
     For `defer` to work, the local scope where `defer` gets used need to
     eventually get disposed with everything in it released at the same
     time.
 
-    If `defer` is used in class level, everything in the local scope
+    If `defer` is used at class level, everything in the local scope
     will get copied into the class and will never get released in time.
 
     Therefore, an exception is raised to prevent such usages.
     """
-
-    import pytest
 
     from deferrer import defer
 
@@ -73,6 +73,11 @@ def defer_can_be_used_in_sugarful_form() -> None:
         defer and nums.append(2)
         assert nums == [1]
 
+    if sys.version_info < (3, 12):
+        from deferrer import defer_scope
+
+        f = defer_scope(f)
+
     f()
     assert nums == [1, 2, 0]
 
@@ -98,6 +103,11 @@ def defer_can_be_used_in_sugarless_form() -> None:
 
         defer(nums.append)(2)
         assert nums == [1]
+
+    if sys.version_info < (3, 12):
+        from deferrer import defer_scope
+
+        f = defer_scope(f)
 
     f()
     assert nums == [1, 2, 0]
@@ -131,6 +141,11 @@ def defer_can_be_used_in_mixed_forms() -> None:
         defer and nums.append(4)
         assert nums == [2]
 
+    if sys.version_info < (3, 12):
+        from deferrer import defer_scope
+
+        f = defer_scope(f)
+
     f()
     assert nums == [2, 4, 3, 1, 0]
 
@@ -142,8 +157,6 @@ def there_will_be_warnings_for_unsupported_bool_conversions() -> None:
 
     If used in another situation, a warning will be emitted.
     """
-
-    import pytest
 
     from deferrer import defer
 
@@ -167,12 +180,15 @@ def there_will_be_warnings_for_left_out_deferred_calls() -> None:
     allowed not to be further called.
     """
 
-    import pytest
-
     from deferrer import defer
 
     def f() -> None:
         __ = defer(lambda __: None)
+
+    if sys.version_info < (3, 12):
+        from deferrer import defer_scope
+
+        f = defer_scope(f)
 
     with pytest.warns():
         f()
@@ -184,8 +200,6 @@ def deferred_call_cannot_be_further_called_more_than_once() -> None:
     an exception will be raised. The previous deferred calls, including
     the first further call of this deferred call, will all take effect.
     """
-
-    import pytest
 
     from deferrer import defer
 
@@ -208,6 +222,11 @@ def deferred_call_cannot_be_further_called_more_than_once() -> None:
         assert nums == [1]
         # This will cause an exception.
         deferred(3)
+
+    if sys.version_info < (3, 12):
+        from deferrer import defer_scope
+
+        f = defer_scope(f)
 
     with pytest.raises(Exception):
         f()
@@ -236,6 +255,11 @@ def deferred_call_with_no_argument_is_allowed_not_to_be_further_called() -> None
         nums.append(1)
         assert nums == [1]
 
+    if sys.version_info < (3, 12):
+        from deferrer import defer_scope
+
+        f = defer_scope(f)
+
     f()
     assert nums == [1, 0]
 
@@ -254,8 +278,6 @@ def user_typeerror_during_deferred_call_should_not_be_silenced() -> None:
     import sys
     from typing import cast
 
-    import pytest
-
     from deferrer import defer
 
     def f() -> None:
@@ -263,6 +285,11 @@ def user_typeerror_during_deferred_call_should_not_be_silenced() -> None:
             raise TypeError
 
         __ = defer(raise_type_error)
+
+    if sys.version_info < (3, 12):
+        from deferrer import defer_scope
+
+        f = defer_scope(f)
 
     with pytest.raises(Exception):
         e = cast("BaseException | None", None)
@@ -310,17 +337,22 @@ def defer_can_be_used_as_function_decorator() -> None:
         nums.append(1)
         assert nums == [1]
 
+    if sys.version_info < (3, 12):
+        from deferrer import defer_scope
+
+        f = defer_scope(f)
+
     f()
     assert nums == [1, 0]
 
 
-def deferred_exceptions_are_grouped_and_unraisable() -> None:
+def deferred_exceptions_are_grouped_and_may_be_unraisable() -> None:
     """
     If any exceptions are raised in deferred actions, they are grouped
     as an `ExceptionGroup`.
 
     Due to the fact that the deferred actions are performed during
-    disposal of local scope, the `ExceptionGroup` will be unraisable.
+    disposal of local scope, the `ExceptionGroup` may be unraisable.
     """
 
     import sys
@@ -335,17 +367,29 @@ def deferred_exceptions_are_grouped_and_unraisable() -> None:
         defer and do_raise()
         defer and do_raise()
 
-    e = cast("BaseException | None", None)
+    if sys.version_info < (3, 12):
+        from deferrer import defer_scope
 
-    def unraisablehook(args: sys.UnraisableHookArgs, /) -> None:
-        nonlocal e
-        e = args.exc_value
+        f = defer_scope(f)
 
-    old_unraisablehook = sys.unraisablehook
-    sys.unraisablehook = unraisablehook
-    f()
-    sys.unraisablehook = old_unraisablehook
+    with pytest.raises(Exception) as exc_info:
+        e = cast("BaseException | None", None)
 
+        def unraisablehook(args: sys.UnraisableHookArgs, /) -> None:
+            nonlocal e
+            e = args.exc_value
+
+        old_unraisablehook = sys.unraisablehook
+        sys.unraisablehook = unraisablehook
+        try:
+            f()
+        finally:
+            sys.unraisablehook = old_unraisablehook
+
+        if e is not None:
+            raise e
+
+    e = exc_info.value
     assert isinstance(e, ExceptionGroup)
     e_0, e_1 = e.exceptions
     assert isinstance(e_0, RuntimeError)
@@ -375,6 +419,11 @@ def variables_are_evaluated_when_defer_expression_is_evaluated() -> None:
         # Equivalent to `defer and nums.append(2)`.
         defer and nums.append(i)
         assert nums == [1]
+
+    if sys.version_info < (3, 12):
+        from deferrer import defer_scope
+
+        f = defer_scope(f)
 
     f()
     assert nums == [1, 2, 0]
@@ -419,6 +468,11 @@ def deferred_function_can_write_nonlocal_variables() -> None:
 
         # deferred: b = c
         # deferred: a = b
+
+    if sys.version_info < (3, 12):
+        from deferrer import defer_scope
+
+        f = defer_scope(f)
 
     f()
     assert a == 1

@@ -9,6 +9,7 @@ __all__ = [
 ]
 
 import operator
+import sys
 from collections.abc import Callable, Iterable, Iterator
 from contextlib import AbstractContextManager
 from functools import update_wrapper
@@ -16,7 +17,7 @@ from types import FrameType
 from typing import Any, Final, Generic, ParamSpec, TypeVar, cast, final, overload
 
 from ._deferred_actions import DeferredActions
-from ._frame import get_outer_frame, is_class_frame, is_global_frame
+from ._frame import get_current_frame, get_outer_frame, is_class_frame, is_global_frame
 
 _Wrapped_t = TypeVar("_Wrapped_t")
 
@@ -53,6 +54,12 @@ def ensure_deferred_actions(frame: FrameType) -> DeferredActions:
         deferred_actions = recorder.find(frame)
         if deferred_actions is not None:
             return deferred_actions
+
+    if sys.version_info < (3, 12):
+        raise RuntimeError(
+            "cannot inject deferred actions into local scope"
+            + " with Python older than 3.12"
+        )
 
     local_scope = frame.f_locals
 
@@ -123,7 +130,7 @@ class _DeferScopeWrapper(Generic[_Wrapped_t]):
     ) -> _R:
         wrapped = self._wrapped
 
-        frame = get_outer_frame()
+        frame = get_current_frame()
         deferred_actions = DeferredActions()
 
         _callable_deferred_actions_recorder.add(frame, deferred_actions)
@@ -170,6 +177,8 @@ class _CallableDeferredActionsRecorder:
         __ = self._internal_dict.pop(outer_frame)
         assert __ is deferred_actions
 
+        deferred_actions.drain()
+
     def find(self, frame: FrameType, /) -> DeferredActions | None:
         outer_frame = frame.f_back
         assert outer_frame is not None
@@ -205,6 +214,8 @@ class _ContextDeferredActionsRecorder:
 
         if len(deferred_actions_list) == 0:
             del internal_dict[frame]
+
+        deferred_actions.drain()
 
     def find(self, frame: FrameType, /) -> DeferredActions | None:
         deferred_actions_list = self._internal_dict.get(frame)

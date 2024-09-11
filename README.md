@@ -25,6 +25,11 @@ There are two designed ways to use `defer`. You may use either of them, or mix t
 ...     defer and print(3)
 ...     defer and print(4)
 
+>>> import sys
+>>> if sys.version_info < (3, 12):
+...     from deferrer import defer_scope
+...     f = defer_scope(f)
+
 >>> f()
 2
 4
@@ -45,6 +50,11 @@ There are two designed ways to use `defer`. You may use either of them, or mix t
 ...     print(2)
 ...     defer(print)(3)
 ...     defer(print)(4)
+
+>>> import sys
+>>> if sys.version_info < (3, 12):
+...     from deferrer import defer_scope
+...     f = defer_scope(f)
 
 >>> f()
 2

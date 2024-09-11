@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 __all__ = [
+    "get_current_frame",
     "get_outer_frame",
     "is_class_frame",
     "is_global_frame",
@@ -13,6 +14,26 @@ from types import FrameType
 from ._opcode import Opcode
 
 
+def get_current_frame() -> FrameType:
+    """
+    Returns the frame of the caller.
+
+    Examples
+    --------
+    >>> def foo():  # L0
+    ...     frame = get_current_frame()
+    ...     print(
+    ...         frame.f_code.co_name,
+    ...         frame.f_lineno - frame.f_code.co_firstlineno,  # L4
+    ...     )
+
+    >>> foo()
+    foo 4
+    """
+
+    return sys._getframe(1)  # pyright: ignore[reportPrivateUsage]
+
+
 def get_outer_frame() -> FrameType:
     """
     Returns the frame of the caller of caller.
@@ -22,7 +43,7 @@ def get_outer_frame() -> FrameType:
     >>> def foo():  # L0
     ...     def inner():
     ...         frame = get_outer_frame()
-    ...         print (
+    ...         print(
     ...             frame.f_code.co_name,
     ...             frame.f_lineno - frame.f_code.co_firstlineno,
     ...         )
@@ -32,8 +53,7 @@ def get_outer_frame() -> FrameType:
     foo 7
     """
 
-    frame = sys._getframe(2)  # pyright: ignore[reportPrivateUsage]
-    return frame
+    return sys._getframe(2)  # pyright: ignore[reportPrivateUsage]
 
 
 def is_global_frame(frame: FrameType, /) -> bool:
