@@ -4,7 +4,7 @@ __all__ = ["defer"]
 
 from collections.abc import Callable
 from types import CellType, FunctionType
-from typing import Any, Final, Literal, cast, final
+from typing import Any, Final, Generic, Literal, ParamSpec, cast, final
 from warnings import warn
 
 from ._code_location import get_code_location
@@ -12,6 +12,8 @@ from ._defer_scope import ensure_deferred_actions
 from ._deferred_actions import DeferredAction
 from ._frame import get_outer_frame
 from ._opcode import Opcode
+
+_P = ParamSpec("_P")
 
 _MISSING = cast("Any", object())
 
@@ -168,7 +170,7 @@ class Defer:
         return False
 
     @staticmethod
-    def __call__[**P](callable: Callable[P, Any], /) -> Callable[P, None]:
+    def __call__(callable: Callable[_P, Any], /) -> Callable[_P, None]:
         """
         Converts a callable into a deferred callable.
 
@@ -199,19 +201,19 @@ class _DeferredCall(DeferredAction):
 
 
 @final
-class _DeferredCallable[**P](DeferredAction):
+class _DeferredCallable(DeferredAction, Generic[_P]):
     _body: Final[Callable[..., Any]]
     _code_location: Final[str]
 
     _args_and_kwargs: tuple[tuple[Any, ...], dict[str, Any]] | None
 
-    def __init__(self, body: Callable[P, Any], /, code_location: str) -> None:
+    def __init__(self, body: Callable[_P, Any], /, code_location: str) -> None:
         self._body = body
         self._code_location = code_location
 
         self._args_and_kwargs = None
 
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> None:
+    def __call__(self, *args: _P.args, **kwargs: _P.kwargs) -> None:
         if self._args_and_kwargs is not None:
             raise RuntimeError("`defer(...)` gets further called more than once.")
 
