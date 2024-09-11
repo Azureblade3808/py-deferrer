@@ -7,11 +7,11 @@ from types import CellType, FunctionType
 from typing import Any, Final, Literal, cast, final
 from warnings import warn
 
+from ._code_location import get_code_location
 from ._defer_scope import ensure_deferred_actions
 from ._deferred_actions import DeferredAction
-from ._opcode import Opcode
-from ._code_location import get_code_location
 from ._frame import get_outer_frame
+from ._opcode import Opcode
 
 _MISSING = cast("Any", object())
 
