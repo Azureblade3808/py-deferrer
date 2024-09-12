@@ -174,7 +174,7 @@ class Defer:
             )
             dummy_consts += (value,)
 
-        # Copy the bytecode of the `...` part in `defer and ...` into the dummy
+        # Copy the bytecode of the RHS part in `defer and ...` into the dummy
         # function.
         n_skipped_bytes = code_bytes[i_code_byte + 1] * 2
         dummy_code_bytes += code_bytes[
@@ -192,6 +192,7 @@ class Defer:
             co_kwonlyargcount=0,
             co_code=dummy_code_bytes,
             co_consts=dummy_consts,
+            co_linetable=bytes(),
         )
 
         new_function = FunctionType(
