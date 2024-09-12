@@ -158,8 +158,6 @@ class Defer:
             )
             dummy_code_bytes += bytes([Opcode.COPY_FREE_VARS, n_free_vars])
 
-        dummy_code_bytes += bytes([Opcode.RESUME, 0])
-
         # If the original function has local variables, pass their current values by
         # appending these values to constants and using some instruction pairs of
         # "LOAD_CONST" and "STORE_FAST".
