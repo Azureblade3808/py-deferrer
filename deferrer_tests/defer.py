@@ -51,6 +51,21 @@ def defer_is_not_allowed_at_class_level() -> None:
             defer(print)()
 
 
+@pytest.mark.skipif("sys.version_info >= (3, 12)")
+def defer_is_not_allowed_at_function_level_without_defer_scope_in_old_python() -> None:
+    """
+    `defer_scope` must be used for `defer` to work in Python older than 3.12.
+    """
+
+    from deferrer import defer
+
+    def f():
+        defer and print()
+
+    with pytest.raises(Exception):
+        f()
+
+
 def defer_can_be_used_in_sugarful_form() -> None:
     """
     `defer` can be used like `defer and {expression}`.
