@@ -10,6 +10,7 @@ description = "Fancy `defer` in python 3.12"
 classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
@@ -18,7 +19,7 @@ classifiers = [
 ]
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.12, <3.13"
+requires-python = ">=3.11, <3.13"
 dynamic = ["version"]
 keywords = ["defer", "sugar"]
 
@@ -33,7 +34,6 @@ profile = "black"
 
 case_sensitive = true
 combine_as_imports = true
-project = ["deferrer"]
 reverse_relative = true
 star_first = true
 treat_all_comments_as_code = true
@@ -46,7 +46,7 @@ treat_all_comments_as_code = true
 include = ["**/*.ipy", "**/*.ipynb", "**/*.py", "**/*.pyi"]
 stubPath = "__typings__"
 
-pythonVersion = "3.12"
+pythonVersion = "3.11"
 pythonPlatform = "All"
 
 typeCheckingMode = "strict"
@@ -158,6 +158,7 @@ addopts = [
     "--doctest-modules",
     "--doctest-glob=*.md",
     "--cov",
+    "--cov-append",
     "--cov-report=xml",
     "--ignore-glob=**/samples/*",
 ]
