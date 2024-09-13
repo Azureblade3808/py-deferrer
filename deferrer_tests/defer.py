@@ -1,9 +1,5 @@
 from __future__ import annotations
 
-import sys
-
-import pytest
-
 
 def defer_is_not_allowed_at_module_level() -> None:
     """
@@ -16,6 +12,8 @@ def defer_is_not_allowed_at_module_level() -> None:
 
     Therefore, an exception is raised to prevent such usages.
     """
+
+    import pytest
 
     with pytest.raises(Exception) as exc_info:
         from deferrer_tests.samples import sugarful_without_defer_scope as _
@@ -38,6 +36,8 @@ def defer_is_not_allowed_at_class_level() -> None:
     Therefore, an exception is raised to prevent such usages.
     """
 
+    import pytest
+
     from deferrer import defer
 
     with pytest.raises(Exception):
@@ -51,11 +51,17 @@ def defer_is_not_allowed_at_class_level() -> None:
             defer(print)()
 
 
-@pytest.mark.skipif("sys.version_info >= (3, 12)")
 def defer_is_not_allowed_at_function_level_without_defer_scope_in_old_python() -> None:
     """
     `defer_scope` must be used for `defer` to work in Python older than 3.12.
     """
+
+    import sys
+
+    import pytest
+
+    if sys.version_info >= (3, 12):
+        pytest.skip()
 
     from deferrer import defer
 
@@ -70,6 +76,8 @@ def defer_can_be_used_in_sugarful_form() -> None:
     """
     `defer` can be used like `defer and {expression}`.
     """
+
+    import sys
 
     from deferrer import defer
 
@@ -102,6 +110,8 @@ def defer_can_be_used_in_sugarless_form() -> None:
     `defer` can be used like `defer(function)(*args, **kwargs)`.
     """
 
+    import sys
+
     from deferrer import defer
 
     nums = []
@@ -132,6 +142,8 @@ def defer_can_be_used_in_mixed_forms() -> None:
     """
     Both forms can work together.
     """
+
+    import sys
 
     from deferrer import defer
 
@@ -173,6 +185,8 @@ def there_will_be_warnings_for_unsupported_bool_conversions() -> None:
     If used in another situation, a warning will be emitted.
     """
 
+    import pytest
+
     from deferrer import defer
 
     with pytest.warns():
@@ -195,6 +209,10 @@ def there_will_be_warnings_for_left_out_deferred_calls() -> None:
     allowed not to be further called.
     """
 
+    import sys
+
+    import pytest
+
     from deferrer import defer
 
     def f() -> None:
@@ -215,6 +233,10 @@ def deferred_call_cannot_be_further_called_more_than_once() -> None:
     an exception will be raised. The previous deferred calls, including
     the first further call of this deferred call, will all take effect.
     """
+
+    import sys
+
+    import pytest
 
     from deferrer import defer
 
@@ -256,6 +278,8 @@ def deferred_call_with_no_argument_is_allowed_not_to_be_further_called() -> None
     Such usage is not recommended though.
     """
 
+    import sys
+
     from deferrer import defer
 
     nums = []
@@ -291,7 +315,8 @@ def user_typeerror_during_deferred_call_should_not_be_silenced() -> None:
     """
 
     import sys
-    from typing import cast
+
+    import pytest
 
     from deferrer import defer
 
@@ -307,7 +332,7 @@ def user_typeerror_during_deferred_call_should_not_be_silenced() -> None:
         f = defer_scope(f)
 
     with pytest.raises(Exception):
-        e = cast("BaseException | None", None)
+        e = None
 
         def unraisablehook(args: sys.UnraisableHookArgs, /) -> None:
             nonlocal e
@@ -334,6 +359,8 @@ def defer_can_be_used_as_function_decorator() -> None:
         ...
     ```
     """
+
+    import sys
 
     from deferrer import defer
 
@@ -371,7 +398,8 @@ def deferred_exceptions_are_grouped_and_may_be_unraisable() -> None:
     """
 
     import sys
-    from typing import cast
+
+    import pytest
 
     from deferrer import defer
 
@@ -388,7 +416,7 @@ def deferred_exceptions_are_grouped_and_may_be_unraisable() -> None:
         f = defer_scope(f)
 
     with pytest.raises(Exception) as exc_info:
-        e = cast("BaseException | None", None)
+        e = None
 
         def unraisablehook(args: sys.UnraisableHookArgs, /) -> None:
             nonlocal e
@@ -412,6 +440,8 @@ def deferred_exceptions_are_grouped_and_may_be_unraisable() -> None:
 
 
 def variables_are_evaluated_when_defer_expression_is_evaluated() -> None:
+    import sys
+
     from deferrer import defer
 
     nums = []
@@ -445,6 +475,8 @@ def variables_are_evaluated_when_defer_expression_is_evaluated() -> None:
 
 
 def deferred_function_can_write_nonlocal_variables() -> None:
+    import sys
+
     from deferrer import defer
 
     a = int()
