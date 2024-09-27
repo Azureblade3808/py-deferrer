@@ -68,7 +68,7 @@ class Test__defer:
             f()
 
     @staticmethod
-    def test__can_be_used_in_sugarful_form() -> None:
+    def test__works_in_sugarful_form() -> None:
         """
         `defer` can be used like `defer and {expression}`.
         """
@@ -97,7 +97,7 @@ class Test__defer:
         assert nums == [1, 2, 0]
 
     @staticmethod
-    def test__can_be_used_in_sugarless_form() -> None:
+    def test__works_in_sugarless_form() -> None:
         """
         `defer` can be used like `defer(function)(*args, **kwargs)`.
         """
@@ -126,7 +126,7 @@ class Test__defer:
         assert nums == [1, 2, 0]
 
     @staticmethod
-    def test__can_be_used_in_mixed_forms() -> None:
+    def test__works_in_mixed_forms() -> None:
         """
         Both forms can work together.
         """
@@ -161,6 +161,35 @@ class Test__defer:
         assert nums == [2, 4, 3, 1, 0]
 
     @staticmethod
+    def test__works_with_closure_variable() -> None:
+        nums = []
+
+        def f() -> None:
+            x = 0
+
+            defer and nums.append(x)
+
+            @defer
+            def _() -> None:
+                nums.append(x + 1)
+
+            nums.append(x + 2)
+
+            @defer
+            def _() -> None:
+                nums.append(x + 3)
+
+            defer and nums.append(x + 4)
+
+        if sys.version_info < (3, 12):
+            from deferrer import defer_scope
+
+            f = defer_scope(f)
+
+        f()
+        assert nums == [2, 4, 3, 1, 0]
+
+    @staticmethod
     def test__emits_warning_for_unsupported_bool_conversion() -> None:
         """
         `defer.__bool__()` is only meant to be indirectly called during
@@ -176,7 +205,7 @@ class Test__defer:
             defer or print()
 
     @staticmethod
-    def test__can_be_used_as_function_decorator() -> None:
+    def test__works_as_function_decorator() -> None:
         """
         The typical usage is -
 
