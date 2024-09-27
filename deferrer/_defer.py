@@ -139,16 +139,45 @@ class Defer:
         local_scope = frame.f_locals
 
         dummy_code_bytes = bytes()
+        dummy_closure = ()
+        dummy_consts = code.co_consts
+
+        # If the original function has local variables, pass their current values by
+        # appending these values to constants and using some instruction pairs of
+        # "LOAD_CONST" and "STORE_FAST".
+        local_var_names = code.co_varnames
+        for i_local_var, name in enumerate(local_var_names):
+            if (value := local_scope.get(name, _MISSING)) is _MISSING:
+                # The value does not exist, so there is nothing to store.
+                continue
+
+            dummy_code_bytes += bytes(
+                [Opcode.LOAD_CONST, len(dummy_consts), Opcode.STORE_FAST, i_local_var]
+            )
+            dummy_consts += (value,)
+
+        # If the original function has cell variables, add some instructions of
+        # "MAKE_CELL", and then pass their current values by appending these values to
+        # constants and using some instruction pairs of "LOAD_CONST" and "STORE_DEREF".
+        cell_var_names = code.co_cellvars
+        for i_cell_var, name in enumerate(cell_var_names, len(local_var_names)):
+            dummy_code_bytes += bytes([Opcode.MAKE_CELL, i_cell_var])
+
+            if (value := local_scope.get(name, _MISSING)) is _MISSING:
+                # The value does not exist, so there is nothing to store.
+                continue
+
+            dummy_code_bytes += bytes(
+                [Opcode.LOAD_CONST, len(dummy_consts), Opcode.STORE_DEREF, i_cell_var]
+            )
+            dummy_consts += (value,)
 
         # If the original function has free variables, create a closure based on their
-        # current values, and add a "COPY_FREE_VARS" instruction at the head of the
-        # dummy function.
+        # current values, and add a "COPY_FREE_VARS" instruction.
         free_var_names = code.co_freevars
         n_free_vars = len(free_var_names)
-        if n_free_vars == 0:
-            dummy_closure = ()
-        else:
-            dummy_closure = tuple(
+        if n_free_vars != 0:
+            dummy_closure += tuple(
                 (
                     CellType()
                     if (value := frame.f_locals.get(name, _MISSING)) is _MISSING
@@ -157,20 +186,6 @@ class Defer:
                 for name in free_var_names
             )
             dummy_code_bytes += bytes([Opcode.COPY_FREE_VARS, n_free_vars])
-
-        # If the original function has local variables, pass their current values by
-        # appending these values to constants and using some instruction pairs of
-        # "LOAD_CONST" and "STORE_FAST".
-        dummy_consts = code.co_consts
-        local_var_names = code.co_varnames
-        for i_local_var, name in enumerate(local_var_names):
-            if (value := local_scope.get(name, _MISSING)) is _MISSING:
-                continue
-
-            dummy_code_bytes += bytes(
-                [Opcode.LOAD_CONST, len(dummy_consts), Opcode.STORE_FAST, i_local_var]
-            )
-            dummy_consts += (value,)
 
         # Copy the bytecode of the RHS part in `defer and ...` into the dummy
         # function.
