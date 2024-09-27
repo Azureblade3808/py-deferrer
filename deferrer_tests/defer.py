@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from typing import Never
 
 import pytest
 
@@ -161,25 +162,69 @@ class Test__defer:
         assert nums == [2, 4, 3, 1, 0]
 
     @staticmethod
-    def test__works_with_closure_variable() -> None:
+    def test__works_with_free_and_cell_variables() -> None:
         nums = []
 
         def f() -> None:
-            x = 0
+            # This is a cell variable with no value
+            n0: Never
+            # This is a cell variable with value
+            i0 = 1
 
-            defer and nums.append(x)
+            def f1() -> None:
+                # This is a free variable with no value.
+                nonlocal n0
+                # This is a free variable with value.
+                nonlocal i0
 
-            @defer
-            def _() -> None:
-                nums.append(x + 1)
+                # This is a cell variable with no value
+                n1: Never
+                # This is a cell variable with value
+                i1 = 2
 
-            nums.append(x + 2)
+                def f2() -> None:
+                    nonlocal n1
+                    nonlocal i1
 
-            @defer
-            def _() -> None:
-                nums.append(x + 3)
+                    i2 = 3
 
-            defer and nums.append(x + 4)
+                    defer and nums.append(i2)
+                    nums.append(i1)
+                    defer and nums.append(-i2)
+
+                    i1 = -i1
+
+                assert i1 == 2
+                defer and nums.append(i1)
+                assert nums == []
+
+                f2()
+                assert nums == [2, -3, 3]
+                assert i1 == -2
+
+                nums.append(i1)
+                assert nums == [2, -3, 3, -2]
+
+                assert -i1 == 2
+                defer and nums.append(-i1)
+                assert nums == [2, -3, 3, -2]
+
+                i0 = -i0
+
+            assert i0 == 1
+            defer and nums.append(i0)
+            assert nums == []
+
+            f1()
+            assert nums == [2, -3, 3, -2, 2, 2]
+            assert i0 == -1
+
+            nums.append(i0)
+            assert nums == [2, -3, 3, -2, 2, 2, -1]
+
+            assert -i0 == 1
+            defer and nums.append(-i0)
+            assert nums == [2, -3, 3, -2, 2, 2, -1]
 
         if sys.version_info < (3, 12):
             from deferrer import defer_scope
@@ -187,7 +232,7 @@ class Test__defer:
             f = defer_scope(f)
 
         f()
-        assert nums == [2, 4, 3, 1, 0]
+        assert nums == [2, -3, 3, -2, 2, 2, -1, 1, 1]
 
     @staticmethod
     def test__emits_warning_for_unsupported_bool_conversion() -> None:
