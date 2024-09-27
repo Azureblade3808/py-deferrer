@@ -54,6 +54,24 @@ class Test__defer:
             class _:
                 defer(print)()
 
+        with pytest.raises(Exception):
+
+            def _(x: int = 0):
+                # This class will have "COPY_FREE_VARS" at the head of its code.
+                class _:
+                    defer and print(x)
+
+            _()
+
+        with pytest.raises(Exception):
+
+            def _(x: int = 0):
+                # This class will have "COPY_FREE_VARS" at the head of its code.
+                class _:
+                    defer(print)(x)
+
+            _()
+
     @staticmethod
     @pytest.mark.skipif(sys.version_info >= (3, 12), reason="supported on new python")
     def test__is_forbidden_at_function_level_in_old_python() -> None:
@@ -194,37 +212,28 @@ class Test__defer:
 
                     i1 = -i1
 
-                assert i1 == 2
+                if sys.version_info < (3, 12):
+                    from deferrer import defer_scope
+
+                    f2 = defer_scope(f2)
+
                 defer and nums.append(i1)
-                assert nums == []
-
                 f2()
-                assert nums == [2, -3, 3]
-                assert i1 == -2
-
-                nums.append(i1)
-                assert nums == [2, -3, 3, -2]
-
-                assert -i1 == 2
+                nums.append(i0)
+                f2()
                 defer and nums.append(-i1)
-                assert nums == [2, -3, 3, -2]
 
-                i0 = -i0
+                i0 = i0
 
-            assert i0 == 1
+            if sys.version_info < (3, 12):
+                from deferrer import defer_scope
+
+                f1 = defer_scope(f1)
+
             defer and nums.append(i0)
-            assert nums == []
-
             f1()
-            assert nums == [2, -3, 3, -2, 2, 2]
-            assert i0 == -1
-
-            nums.append(i0)
-            assert nums == [2, -3, 3, -2, 2, 2, -1]
-
-            assert -i0 == 1
+            f1()
             defer and nums.append(-i0)
-            assert nums == [2, -3, 3, -2, 2, 2, -1]
 
         if sys.version_info < (3, 12):
             from deferrer import defer_scope
@@ -232,7 +241,28 @@ class Test__defer:
             f = defer_scope(f)
 
         f()
-        assert nums == [2, -3, 3, -2, 2, 2, -1, 1, 1]
+        assert nums == [
+            2,
+            -3,
+            3,
+            1,
+            -2,
+            -3,
+            3,
+            -2,
+            2,
+            2,
+            -3,
+            3,
+            1,
+            -2,
+            -3,
+            3,
+            -2,
+            2,
+            -1,
+            1,
+        ]
 
     @staticmethod
     def test__emits_warning_for_unsupported_bool_conversion() -> None:
