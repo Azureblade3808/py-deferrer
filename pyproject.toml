@@ -46,7 +46,6 @@ treat_all_comments_as_code = true
 include = ["**/*.ipy", "**/*.ipynb", "**/*.py", "**/*.pyi"]
 stubPath = "__typings__"
 
-pythonVersion = "3.11"
 pythonPlatform = "All"
 
 typeCheckingMode = "strict"
@@ -152,8 +151,6 @@ reportUnusedCallResult = "error"
 
 [tool.pytest.ini_options]
 python_files = ["*_tests/*.py"]
-python_classes = ["*"]
-python_functions = ["*"]
 addopts = [
     "--doctest-modules",
     "--doctest-glob=*.md",
