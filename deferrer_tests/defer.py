@@ -574,3 +574,41 @@ class Test__deferred_exceptions:
         e_0, e_1 = e.exceptions
         assert isinstance(e_0, RuntimeError)
         assert isinstance(e_1, RuntimeError)
+
+    @staticmethod
+    def test__work_in_generator_function() -> None:
+        """ """
+
+        def f():
+            # Makes the function a generator function.
+            yield
+
+            # Should cause a `ZeroDivisionError` in deferred actions.
+            defer and 0 / 0
+
+        if sys.version_info < (3, 12):
+            from deferrer import defer_scope
+
+            f = defer_scope(f)
+
+        with pytest.raises(Exception) as exc_info:
+            e = None
+
+            def unraisablehook(args: sys.UnraisableHookArgs, /) -> None:
+                nonlocal e
+                e = args.exc_value
+
+            old_unraisablehook = sys.unraisablehook
+            sys.unraisablehook = unraisablehook
+            try:
+                __ = list(f())
+            finally:
+                sys.unraisablehook = old_unraisablehook
+
+            if e is not None:
+                raise e
+
+        e = exc_info.value
+        assert isinstance(e, ExceptionGroup)
+        (e_0,) = e.exceptions
+        assert isinstance(e_0, ZeroDivisionError)
