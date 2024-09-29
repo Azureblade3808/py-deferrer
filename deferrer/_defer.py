@@ -206,6 +206,7 @@ class Defer:
             co_code=dummy_code_bytes,
             co_consts=dummy_consts,
             co_linetable=bytes(),
+            co_exceptiontable=bytes(),
         )
 
         new_function = FunctionType(
