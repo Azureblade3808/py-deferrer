@@ -315,51 +315,6 @@ class Test__defer:
         assert nums == [1, 0]
 
     @staticmethod
-    def test__exceptions_are_grouped_and_may_be_unraisable() -> None:
-        """
-        If any exceptions are raised in deferred actions, they are
-        grouped as an `ExceptionGroup`.
-
-        Due to the fact that the deferred actions are performed during
-        disposal of local scope, the `ExceptionGroup` may be unraisable.
-        """
-
-        def f() -> None:
-            def do_raise():
-                raise RuntimeError
-
-            defer and do_raise()
-            defer and do_raise()
-
-        if sys.version_info < (3, 12):
-            from deferrer import defer_scope
-
-            f = defer_scope(f)
-
-        with pytest.raises(Exception) as exc_info:
-            e = None
-
-            def unraisablehook(args: sys.UnraisableHookArgs, /) -> None:
-                nonlocal e
-                e = args.exc_value
-
-            old_unraisablehook = sys.unraisablehook
-            sys.unraisablehook = unraisablehook
-            try:
-                f()
-            finally:
-                sys.unraisablehook = old_unraisablehook
-
-            if e is not None:
-                raise e
-
-        e = exc_info.value
-        assert isinstance(e, ExceptionGroup)
-        e_0, e_1 = e.exceptions
-        assert isinstance(e_0, RuntimeError)
-        assert isinstance(e_1, RuntimeError)
-
-    @staticmethod
     def test__variables_are_evaluated_beforehand() -> None:
         nums = []
 
@@ -572,3 +527,97 @@ class Test__deferred_call:
         assert a == 1
         assert b == 1
         assert c == 1
+
+
+class Test__deferred_exceptions:
+    @staticmethod
+    def test__are_grouped_and_may_be_unraisable() -> None:
+        """
+        If any exceptions are raised in deferred actions, they are
+        grouped as an `ExceptionGroup`.
+
+        Due to the fact that the deferred actions are performed during
+        disposal of local scope, the `ExceptionGroup` may be unraisable.
+        """
+
+        def f() -> None:
+            def do_raise():
+                raise RuntimeError
+
+            defer and do_raise()
+            defer and do_raise()
+
+        if sys.version_info < (3, 12):
+            from deferrer import defer_scope
+
+            f = defer_scope(f)
+
+        with pytest.raises(Exception) as exc_info:
+            e = None
+
+            def unraisablehook(args: sys.UnraisableHookArgs, /) -> None:
+                nonlocal e
+                e = args.exc_value
+
+            old_unraisablehook = sys.unraisablehook
+            sys.unraisablehook = unraisablehook
+            try:
+                f()
+            finally:
+                sys.unraisablehook = old_unraisablehook
+
+            if e is not None:
+                raise e
+
+        e = exc_info.value
+        assert isinstance(e, ExceptionGroup)
+        e_0, e_1 = e.exceptions
+        assert isinstance(e_0, RuntimeError)
+        assert isinstance(e_1, RuntimeError)
+
+    @staticmethod
+    def test__work_in_generator_function() -> None:
+        """ """
+
+        if sys.version_info >= (3, 12):
+
+            def f():
+                # Makes the function a generator function.
+                yield
+
+                # Should cause a `ZeroDivisionError` in deferred actions.
+                defer and 0 / 0
+
+        else:
+
+            from deferrer import defer_scope
+
+            def f():
+                with defer_scope():
+                    # Makes the function a generator function.
+                    yield
+
+                    # Should cause a `ZeroDivisionError` in deferred actions.
+                    defer and 0 / 0
+
+        with pytest.raises(Exception) as exc_info:
+            e = None
+
+            def unraisablehook(args: sys.UnraisableHookArgs, /) -> None:
+                nonlocal e
+                e = args.exc_value
+
+            old_unraisablehook = sys.unraisablehook
+            sys.unraisablehook = unraisablehook
+            try:
+                __ = list(f())
+            finally:
+                sys.unraisablehook = old_unraisablehook
+
+            if e is not None:
+                raise e
+
+        e = exc_info.value
+        assert isinstance(e, ExceptionGroup)
+        (e_0,) = e.exceptions
+        assert isinstance(e_0, ZeroDivisionError)
