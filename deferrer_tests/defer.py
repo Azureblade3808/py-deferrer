@@ -579,17 +579,26 @@ class Test__deferred_exceptions:
     def test__work_in_generator_function() -> None:
         """ """
 
-        def f():
-            # Makes the function a generator function.
-            yield
+        if sys.version_info >= (3, 12):
 
-            # Should cause a `ZeroDivisionError` in deferred actions.
-            defer and 0 / 0
+            def f():
+                # Makes the function a generator function.
+                yield
 
-        if sys.version_info < (3, 12):
+                # Should cause a `ZeroDivisionError` in deferred actions.
+                defer and 0 / 0
+
+        else:
+
             from deferrer import defer_scope
 
-            f = defer_scope(f)
+            def f():
+                with defer_scope():
+                    # Makes the function a generator function.
+                    yield
+
+                    # Should cause a `ZeroDivisionError` in deferred actions.
+                    defer and 0 / 0
 
         with pytest.raises(Exception) as exc_info:
             e = None
