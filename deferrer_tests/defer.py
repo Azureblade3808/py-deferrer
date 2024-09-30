@@ -265,6 +265,48 @@ class Test__defer:
         ]
 
     @staticmethod
+    def test__works_with_arguments() -> None:
+        def f(x=0) -> None:
+            defer and nums.append(x)
+            nums.append(0)
+            defer and nums.append(-x)
+
+        nums = []
+        f()
+        assert nums == [0, 0, 0]
+
+        nums = []
+        f(0)
+        assert nums == [0, 0, 0]
+
+        nums = []
+        f(1)
+        assert nums == [0, -1, 1]
+
+    @staticmethod
+    def test__works_with_arguments_as_cell_variables() -> None:
+        def f(x=0) -> None:
+            defer and nums.append(x)
+            nums.append(0)
+            defer and nums.append(-x)
+
+            # Makes `x` a cell variable.
+            def _():
+                x
+
+        nums = []
+        f()
+        assert nums == [0, 0, 0]
+
+        nums = []
+        f(0)
+        assert nums == [0, 0, 0]
+
+        nums = []
+        f(1)
+        assert nums == [0, -1, 1]
+
+    @staticmethod
     def test__emits_warning_for_unsupported_bool_conversion() -> None:
         """
         `defer.__bool__()` is only meant to be indirectly called during
