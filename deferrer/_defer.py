@@ -162,32 +162,34 @@ class Defer:
         # values to constants and using some instruction pairs of "LOAD_CONST" and
         # "STORE_DEREF".
         cell_var_names = code.co_cellvars
-        i_nonlocal_cell_var = len(local_var_names)
+        next_i_nonlocal_cell_var = len(local_var_names)
         for name in cell_var_names:
-            # Local.
             try:
                 i_local_var = local_var_names.index(name)
             except ValueError:
-                pass
-            else:
-                dummy_code_bytes += bytes([Opcode.MAKE_CELL, i_local_var])
-                continue
+                i_local_var = None
 
-            # Non-local.
-            dummy_code_bytes += bytes([Opcode.MAKE_CELL, i_nonlocal_cell_var])
-            if (value := local_scope.get(name, _MISSING)) is _MISSING:
-                # The value does not exist, so there is nothing to store.
-                continue
-            dummy_code_bytes += bytes(
-                [
-                    Opcode.LOAD_CONST,
-                    len(dummy_consts),
-                    Opcode.STORE_DEREF,
-                    i_nonlocal_cell_var,
-                ]
-            )
-            dummy_consts += (value,)
-            i_nonlocal_cell_var += 1
+            if i_local_var is not None:
+                dummy_code_bytes += bytes([Opcode.MAKE_CELL, i_local_var])
+            else:
+                i_nonlocal_cell_var = next_i_nonlocal_cell_var
+                next_i_nonlocal_cell_var += 1
+
+                dummy_code_bytes += bytes([Opcode.MAKE_CELL, i_nonlocal_cell_var])
+
+                if (value := local_scope.get(name, _MISSING)) is _MISSING:
+                    # The value does not exist, so there is nothing to store.
+                    continue
+
+                dummy_code_bytes += bytes(
+                    [
+                        Opcode.LOAD_CONST,
+                        len(dummy_consts),
+                        Opcode.STORE_DEREF,
+                        i_nonlocal_cell_var,
+                    ]
+                )
+                dummy_consts += (value,)
 
         # If the original function has free variables, create a closure based on their
         # current values, and add a "COPY_FREE_VARS" instruction.
