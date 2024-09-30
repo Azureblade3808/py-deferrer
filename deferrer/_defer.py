@@ -157,20 +157,37 @@ class Defer:
             dummy_consts += (value,)
 
         # If the original function has cell variables, add some instructions of
-        # "MAKE_CELL", and then pass their current values by appending these values to
-        # constants and using some instruction pairs of "LOAD_CONST" and "STORE_DEREF".
+        # "MAKE_CELL".
+        # For non-local cell variables, pass their current values by appending these
+        # values to constants and using some instruction pairs of "LOAD_CONST" and
+        # "STORE_DEREF".
         cell_var_names = code.co_cellvars
-        for i_cell_var, name in enumerate(cell_var_names, len(local_var_names)):
-            dummy_code_bytes += bytes([Opcode.MAKE_CELL, i_cell_var])
+        i_nonlocal_cell_var = len(local_var_names)
+        for name in cell_var_names:
+            # Local.
+            try:
+                i_local_var = local_var_names.index(name)
+            except ValueError:
+                pass
+            else:
+                dummy_code_bytes += bytes([Opcode.MAKE_CELL, i_local_var])
+                continue
 
+            # Non-local.
+            dummy_code_bytes += bytes([Opcode.MAKE_CELL, i_nonlocal_cell_var])
             if (value := local_scope.get(name, _MISSING)) is _MISSING:
                 # The value does not exist, so there is nothing to store.
                 continue
-
             dummy_code_bytes += bytes(
-                [Opcode.LOAD_CONST, len(dummy_consts), Opcode.STORE_DEREF, i_cell_var]
+                [
+                    Opcode.LOAD_CONST,
+                    len(dummy_consts),
+                    Opcode.STORE_DEREF,
+                    i_nonlocal_cell_var,
+                ]
             )
             dummy_consts += (value,)
+            i_nonlocal_cell_var += 1
 
         # If the original function has free variables, create a closure based on their
         # current values, and add a "COPY_FREE_VARS" instruction.
