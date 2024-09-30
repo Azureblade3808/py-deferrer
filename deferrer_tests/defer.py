@@ -271,6 +271,11 @@ class Test__defer:
             nums.append(0)
             defer and nums.append(-x)
 
+        if sys.version_info < (3, 12):
+            from deferrer import defer_scope
+
+            f = defer_scope(f)
+
         nums = []
         f()
         assert nums == [0, 0, 0]
@@ -293,6 +298,11 @@ class Test__defer:
             # Makes `x` a cell variable.
             def _():
                 x
+
+        if sys.version_info < (3, 12):
+            from deferrer import defer_scope
+
+            f = defer_scope(f)
 
         nums = []
         f()
