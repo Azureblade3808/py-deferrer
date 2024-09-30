@@ -265,6 +265,54 @@ class Test__defer:
         ]
 
     @staticmethod
+    def test__works_with_unbound_variables() -> None:
+        v1 = 1
+        v2 = 2
+        v3 = 3
+        del v2
+        v4 = 4
+        v5 = 5
+        v6 = 6
+        del v5
+
+        def f(v7=7, v8=8, v9=9, v10=10, v11=11, v12=12):
+            nonlocal v4, v5, v6
+            v4 = v4
+            v6 = v6
+            del v8
+            del v11
+            v13 = 13
+            v14 = 14
+            v15 = 15
+            del v14
+
+            def _():
+                # This function is not called and it exists only to make sure that the
+                # following variables get transformed into cell variables in the outer
+                # function.
+                v4, v5, v6, v10, v11, v12, v13, v14, v15  # type: ignore
+
+            defer and nums.append(v1)
+            defer and nums.append(v3)
+            defer and nums.append(v4)
+            defer and nums.append(v6)
+            defer and nums.append(v7)
+            defer and nums.append(v9)
+            defer and nums.append(v10)
+            defer and nums.append(v12)
+            defer and nums.append(v13)
+            defer and nums.append(v15)
+
+        if sys.version_info < (3, 12):
+            from deferrer import defer_scope
+
+            f = defer_scope(f)
+
+        nums = []
+        f()
+        assert nums == [15, 13, 12, 10, 9, 7, 6, 4, 3, 1]
+
+    @staticmethod
     def test__works_with_arguments() -> None:
         def f(x=0) -> None:
             defer and nums.append(x)
