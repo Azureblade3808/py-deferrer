@@ -12,8 +12,8 @@ from ._code_location import get_code_location
 from ._defer_scope import ensure_deferred_actions
 from ._deferred_actions import DeferredAction
 from ._frame import get_outer_frame
-from ._opcode import Opcode
-from ._sequence_matching import WILDCARD, sequence_has_prefix
+from ._opcode import Opcode, build_code_byte_sequence, build_code_bytes
+from ._sequence_matching import WILDCARD, sequence_has_prefix, sequence_has_suffix
 
 _P = ParamSpec("_P")
 
@@ -78,47 +78,12 @@ class Defer:
 
         frame = get_outer_frame()
 
-        # The usage is `defer and ...` and the typical instructions should be like:
-        #
-        # ```
-        #     LOAD_GLOBAL ? (defer)
-        #     COPY
-        # --> POP_JUMP_IF_FALSE ?
-        #     POP_TOP
-        #     <???>
-        # ```
-        # (Python 3.12)
-        #
-        # ```
-        #     LOAD_GLOBAL ? (defer)
-        # --> JUMP_IF_FALSE_OR_POP ?
-        #     <???>
-        # ```
-        # (Python 3.11)
-        #
-        # The current instruction is at the line prefixed by "-->", and the "<???>" part
-        # stands for the RHS part in `defer and ...`.
-        if sys.version_info >= (3, 12):
-            expected_code_bytes_prefix = (
-                Opcode.POP_JUMP_IF_FALSE,
-                WILDCARD,
-                Opcode.POP_TOP,
-                0,
-            )
-            rhs_part_offset = 2
-        else:
-            expected_code_bytes_prefix = (
-                Opcode.JUMP_IF_FALSE_OR_POP,
-                WILDCARD,
-            )
-            rhs_part_offset = 0
-
         code = frame.f_code
         code_bytes = code.co_code
         i_code_byte = frame.f_lasti
 
         if not sequence_has_prefix(
-            code_bytes[i_code_byte:], expected_code_bytes_prefix
+            code_bytes[i_code_byte:], _expected_code_bytes_prefix
         ):
             code_location = get_code_location(frame)
             message = (
@@ -151,9 +116,8 @@ class Defer:
                 # The value does not exist, so there is nothing to store.
                 continue
 
-            dummy_code_bytes += bytes(
-                [Opcode.LOAD_CONST, len(dummy_consts), Opcode.STORE_FAST, i_local_var]
-            )
+            dummy_code_bytes += build_code_bytes(Opcode.LOAD_CONST, len(dummy_consts))
+            dummy_code_bytes += build_code_bytes(Opcode.STORE_FAST, i_local_var)
             dummy_consts += (value,)
 
         # If the original function has cell variables, add some instructions of
@@ -170,24 +134,24 @@ class Defer:
                 i_local_var = None
 
             if i_local_var is not None:
-                dummy_code_bytes += bytes([Opcode.MAKE_CELL, i_local_var])
+                dummy_code_bytes += build_code_bytes(Opcode.MAKE_CELL, i_local_var)
             else:
                 i_nonlocal_cell_var = next_i_nonlocal_cell_var
                 next_i_nonlocal_cell_var += 1
 
-                dummy_code_bytes += bytes([Opcode.MAKE_CELL, i_nonlocal_cell_var])
+                dummy_code_bytes += build_code_bytes(
+                    Opcode.MAKE_CELL, i_nonlocal_cell_var
+                )
 
                 if (value := local_scope.get(name, _MISSING)) is _MISSING:
                     # The value does not exist, so there is nothing to store.
                     continue
 
-                dummy_code_bytes += bytes(
-                    [
-                        Opcode.LOAD_CONST,
-                        len(dummy_consts),
-                        Opcode.STORE_DEREF,
-                        i_nonlocal_cell_var,
-                    ]
+                dummy_code_bytes += build_code_bytes(
+                    Opcode.LOAD_CONST, len(dummy_consts)
+                )
+                dummy_code_bytes += build_code_bytes(
+                    Opcode.STORE_DEREF, i_nonlocal_cell_var
                 )
                 dummy_consts += (value,)
 
@@ -204,18 +168,26 @@ class Defer:
                 )
                 for name in free_var_names
             )
-            dummy_code_bytes += bytes([Opcode.COPY_FREE_VARS, n_free_vars])
+            dummy_code_bytes += build_code_bytes(Opcode.COPY_FREE_VARS, n_free_vars)
 
-        # Copy the bytecode of the RHS part in `defer and ...` into the dummy
-        # function.
-        n_skipped_bytes = code_bytes[i_code_byte + 1] * 2
+        # Copy the bytecode of the RHS part in `defer and ...` into the dummy function.
+        n_skipped_instructions = code_bytes[i_code_byte + _jumping_start_offset + 1]
+        n_skipped_bytes = n_skipped_instructions * 2
         dummy_code_bytes += code_bytes[
-            (i_code_byte + 2 + rhs_part_offset) : (i_code_byte + 2 + n_skipped_bytes)
+            (i_code_byte + _rhs_offset) : (
+                i_code_byte + _jumping_stop_offset + n_skipped_bytes
+            )
         ]
+
+        # For Python 3.13, if the current expression is the last expression in a loop,
+        # there will be a duplicated `POP_TOP + JUMP_BACKWARD` instruction pair.
+        # Cut it off before it can cause any trouble.
+        if sequence_has_suffix(dummy_code_bytes, _unneeded_code_bytes_suffix):
+            dummy_code_bytes = dummy_code_bytes[: -len(_unneeded_code_bytes_suffix)]
 
         # The dummy function should return something. The simplest way is to return
         # whatever value is currently active.
-        dummy_code_bytes += bytes([Opcode.RETURN_VALUE, 0])
+        dummy_code_bytes += build_code_bytes(Opcode.RETURN_VALUE)
 
         # The dummy function will be called with no argument.
         dummy_code = code.replace(
@@ -255,6 +227,108 @@ class Defer:
         deferred_actions.append(deferred_callable)
 
         return deferred_callable
+
+
+_expected_code_bytes_prefix: list[int]
+"""
+Code bytes pattern when `defer.__bool__()` is invoked upon `defer and ...`.
+"""
+
+_jumping_start_offset: int
+"""
+Distance in bytes between the current instruction and the jumping instruction.
+"""
+
+_jumping_stop_offset: int
+"""
+Distance in bytes between the current instruction and the next instruction to the
+jumping instruction.
+"""
+
+_rhs_offset: int
+"""
+Distance in bytes between the current instruction and the instructions of RHS in
+`defer and ...`.
+"""
+
+
+if sys.version_info >= (3, 13) and sys.version_info < (3, 14):
+    # ```
+    #     LOAD_GLOBAL ? (defer)
+    #     COPY
+    # --> TO_BOOL
+    #     POP_JUMP_IF_FALSE ?
+    #     CACHE
+    #     POP_TOP
+    #     <???>
+    # ```
+
+    _expected_code_bytes_prefix = []
+
+    _expected_code_bytes_prefix.extend(
+        build_code_byte_sequence(Opcode.TO_BOOL, cache_value=WILDCARD)
+    )
+    _jumping_start_offset = len(_expected_code_bytes_prefix)
+
+    _expected_code_bytes_prefix.extend(
+        build_code_byte_sequence(
+            Opcode.POP_JUMP_IF_FALSE, WILDCARD, cache_value=WILDCARD
+        )
+    )
+    _jumping_stop_offset = len(_expected_code_bytes_prefix)
+
+    _expected_code_bytes_prefix.extend(
+        build_code_byte_sequence(Opcode.POP_TOP, cache_value=WILDCARD)
+    )
+    _rhs_offset = len(_expected_code_bytes_prefix)
+
+if sys.version_info >= (3, 12) and sys.version_info < (3, 13):
+    # ```
+    #     LOAD_GLOBAL ? (defer)
+    #     COPY
+    # --> POP_JUMP_IF_FALSE ?
+    #     POP_TOP
+    #     <???>
+    # ```
+
+    _expected_code_bytes_prefix = []
+    _jumping_start_offset = 0
+
+    _expected_code_bytes_prefix.extend(
+        build_code_byte_sequence(
+            Opcode.POP_JUMP_IF_FALSE, WILDCARD, cache_value=WILDCARD
+        )
+    )
+    _jumping_stop_offset = len(_expected_code_bytes_prefix)
+
+    _expected_code_bytes_prefix.extend(
+        build_code_byte_sequence(Opcode.POP_TOP, cache_value=WILDCARD)
+    )
+    _rhs_offset = len(_expected_code_bytes_prefix)
+
+if sys.version_info >= (3, 11) and sys.version_info < (3, 12):
+    # ```
+    #     LOAD_GLOBAL ? (defer)
+    # --> JUMP_IF_FALSE_OR_POP ?
+    #     <???>
+    # ```
+
+    _expected_code_bytes_prefix = []
+    _jumping_start_offset = 0
+
+    _expected_code_bytes_prefix.extend(
+        build_code_byte_sequence(
+            Opcode.JUMP_IF_FALSE_OR_POP, WILDCARD, cache_value=WILDCARD
+        )
+    )
+    _jumping_stop_offset = len(_expected_code_bytes_prefix)
+    _rhs_offset = _jumping_stop_offset
+
+
+_unneeded_code_bytes_suffix = (
+    *build_code_byte_sequence(Opcode.POP_TOP, cache_value=WILDCARD),
+    *build_code_byte_sequence(Opcode.JUMP_BACKWARD, WILDCARD, cache_value=WILDCARD),
+)
 
 
 defer = Defer()
