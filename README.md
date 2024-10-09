@@ -1,4 +1,4 @@
-# Fancy `defer` in Python 3.12
+# Fancy `defer` for Python >= 3.12
 
 [![Python package](https://github.com/Azureblade3808/py-deferrer/actions/workflows/python-package.yml/badge.svg)](https://github.com/Azureblade3808/py-deferrer/actions/workflows/python-package.yml)
 [![Coverage Status](https://coveralls.io/repos/github/Azureblade3808/py-deferrer/badge.svg)](https://coveralls.io/github/Azureblade3808/py-deferrer)
