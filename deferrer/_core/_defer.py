@@ -8,12 +8,17 @@ from types import CellType, FunctionType
 from typing import Any, Final, Generic, Literal, ParamSpec, cast, final
 from warnings import warn
 
-from ._code_location import get_code_location
-from ._defer_scope import ensure_deferred_actions
-from ._deferred_actions import DeferredAction
-from ._frame import get_outer_frame
-from ._opcode import Opcode, build_code_byte_sequence, build_code_bytes
-from ._sequence_matching import WILDCARD, sequence_has_prefix, sequence_has_suffix
+from ._deferred_actions import DeferredAction, ensure_deferred_actions
+from .._utils import (
+    WILDCARD,
+    Opcode,
+    build_code_byte_sequence,
+    build_code_bytes,
+    get_code_location,
+    get_outer_frame,
+    sequence_has_prefix,
+    sequence_has_suffix,
+)
 
 _P = ParamSpec("_P")
 
