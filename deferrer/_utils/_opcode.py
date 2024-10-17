@@ -64,10 +64,10 @@ def build_instruction_code_bytes(opcode: Opcode, argument: int = 0) -> bytes:
     for argument_byte in argument_bytes[:-1]:
         code_byte_list.append(Opcode.EXTENDED_ARG)
         code_byte_list.append(argument_byte)
-    code_byte_list.append(opcode)
-    code_byte_list.append(argument_bytes[-1])
-    for __ in range(_n_caches_map[opcode] * 2):
-        code_byte_list.append(0)
+    else:
+        code_byte_list.append(opcode)
+        code_byte_list.append(argument_bytes[-1])
+    code_byte_list.extend([0] * (_n_caches_map[opcode] * 2))
 
     code_bytes = bytes(code_byte_list)
     return code_bytes
