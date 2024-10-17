@@ -124,5 +124,6 @@ jobs:
         run: |
           pytest --cov=deferrer --cov-report=xml --cov-append
 
-      - name: Coveralls      
+      - name: Coveralls
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
         uses: coverallsapp/github-action@v2.3.0          
