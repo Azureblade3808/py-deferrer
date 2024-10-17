@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-__all__ = ["defer"]
+__all__ = ["Defer"]
 
 import sys
 from collections.abc import Callable
 from types import CellType, FunctionType
-from typing import Any, Final, Generic, Literal, ParamSpec, cast, final
+from typing import Any, Final, Literal, cast, final
 from warnings import warn
 
-from ._deferred_actions import DeferredAction, ensure_deferred_actions
-from .._utils import (
+from .._deferred_actions import DeferredAction, ensure_deferred_actions
+from ..._utils import (
     WILDCARD,
     Opcode,
     build_code_byte_sequence,
@@ -20,56 +20,10 @@ from .._utils import (
     sequence_has_suffix,
 )
 
-_P = ParamSpec("_P")
-
 _MISSING = cast("Any", object())
 
 
-@final
 class Defer:
-    """
-    Provides `defer` functionality in both sugarful and sugarless ways.
-
-    Examples
-    --------
-    >>> import sys
-    >>> from deferrer import defer_scope
-
-    >>> def f_0():
-    ...     defer and print(0)
-    ...     defer and print(1)
-    ...     print(2)
-    ...     defer and print(3)
-    ...     defer and print(4)
-
-    >>> if sys.version_info < (3, 12):
-    ...     f_0 = defer_scope(f_0)
-
-    >>> f_0()
-    2
-    4
-    3
-    1
-    0
-
-    >>> def f_1():
-    ...     defer(print)(0)
-    ...     defer(print)(1)
-    ...     print(2)
-    ...     defer(print)(3)
-    ...     defer(print)(4)
-
-    >>> if sys.version_info < (3, 12):
-    ...     f_1 = defer_scope(f_1)
-
-    >>> f_1()
-    2
-    4
-    3
-    1
-    0
-    """
-
     @staticmethod
     def __bool__() -> Literal[False]:
         """
@@ -215,24 +169,6 @@ class Defer:
 
         return False
 
-    @staticmethod
-    def __call__(callable: Callable[_P, Any], /) -> Callable[_P, None]:
-        """
-        Converts a callable into a deferred callable.
-
-        Return value of the given callable will always be ignored.
-        """
-
-        frame = get_outer_frame()
-        code_location = get_code_location(frame)
-
-        deferred_callable = _DeferredCallable(callable, code_location)
-
-        deferred_actions = ensure_deferred_actions(frame)
-        deferred_actions.append(deferred_callable)
-
-        return deferred_callable
-
 
 _expected_code_bytes_prefix: list[int]
 """
@@ -336,9 +272,6 @@ _unneeded_code_bytes_suffix = (
 )
 
 
-defer = Defer()
-
-
 @final
 class _DeferredCall(DeferredAction):
     def __init__(self, body: Callable[[], Any], /) -> None:
@@ -346,54 +279,3 @@ class _DeferredCall(DeferredAction):
 
     def perform(self, /) -> None:
         self._body()
-
-
-@final
-class _DeferredCallable(DeferredAction, Generic[_P]):
-    _body: Final[Callable[..., Any]]
-    _code_location: Final[str]
-
-    _args_and_kwargs: tuple[tuple[Any, ...], dict[str, Any]] | None
-
-    def __init__(self, body: Callable[_P, Any], /, code_location: str) -> None:
-        self._body = body
-        self._code_location = code_location
-
-        self._args_and_kwargs = None
-
-    def __call__(self, *args: _P.args, **kwargs: _P.kwargs) -> None:
-        if self._args_and_kwargs is not None:
-            raise RuntimeError("`defer(...)` gets further called more than once.")
-
-        self._args_and_kwargs = (args, kwargs)
-
-    def perform(self, /) -> None:
-        body = self._body
-        args_and_kwargs = self._args_and_kwargs
-
-        if args_and_kwargs is not None:
-            args, kwargs = args_and_kwargs
-            body(*args, **kwargs)
-            return
-
-        try:
-            body()
-        except Exception as e:
-            if isinstance(e, TypeError):
-                traceback = e.__traceback__
-                assert traceback is not None
-
-                if traceback.tb_next is None:
-                    # This `TypeError` was raised on function call, which means that
-                    # there was a signature error.
-                    # It is typically because a deferred callable with at least one
-                    # required argument doesn't ever get further called with appropriate
-                    # arguments.
-                    code_location = self._code_location
-                    message = (
-                        f"`defer(...)` has never got further called ({code_location})."
-                    )
-                    warn(message)
-                    return
-
-            raise e
