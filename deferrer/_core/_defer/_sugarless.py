@@ -3,7 +3,7 @@ from __future__ import annotations
 __all__ = ["Defer"]
 
 from collections.abc import Callable
-from typing import Any, Final, Generic, ParamSpec, final, override
+from typing import Any, Final, Generic, ParamSpec, final
 from warnings import warn
 
 from .._deferred_actions import DeferredAction, ensure_deferred_actions
@@ -50,7 +50,6 @@ class _DeferredCallable(DeferredAction, Generic[_P]):
 
         self._args_and_kwargs = (args, kwargs)
 
-    @override
     def perform(self, /) -> None:
         body = self._body
         args_and_kwargs = self._args_and_kwargs

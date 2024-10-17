@@ -2,6 +2,7 @@ from __future__ import annotations
 
 __all__ = ["Defer"]
 
+import re
 import sys
 from collections.abc import Callable
 from types import CellType, FunctionType
@@ -10,14 +11,12 @@ from warnings import warn
 
 from .._deferred_actions import DeferredAction, ensure_deferred_actions
 from ..._utils import (
-    WILDCARD,
     Opcode,
-    build_code_byte_sequence,
-    build_code_bytes,
+    build_instruction_code_bytes,
+    build_instruction_pattern,
+    extract_argument_from_instruction,
     get_code_location,
     get_outer_frame,
-    sequence_has_prefix,
-    sequence_has_suffix,
 )
 
 _MISSING = cast("Any", object())
@@ -39,11 +38,20 @@ class Defer:
 
         code = frame.f_code
         code_bytes = code.co_code
-        i_code_byte = frame.f_lasti
 
-        if not sequence_has_prefix(
-            code_bytes[i_code_byte:], _expected_code_bytes_prefix
-        ):
+        i_code_byte = frame.f_lasti
+        for _ in range(3):
+            temp_i_code_byte = i_code_byte - 2
+            if (
+                temp_i_code_byte < 0
+                or code_bytes[temp_i_code_byte] != Opcode.EXTENDED_ARG
+            ):
+                break
+            i_code_byte = temp_i_code_byte
+        code_bytes_0 = code_bytes[i_code_byte:]
+
+        match_0 = re.match(_pattern_0, code_bytes_0)
+        if match_0 is None:
             code_location = get_code_location(frame)
             message = (
                 ""
@@ -58,6 +66,13 @@ class Defer:
             )
             warn(message)
             return False
+
+        n_skipped_bytes = extract_argument_from_instruction(match_0.group(1)) * 2
+        code_bytes_1 = match_0.group(2)[:n_skipped_bytes]
+
+        match_1 = re.fullmatch(_pattern_1, code_bytes_1)
+        assert match_1 is not None
+        code_bytes_2 = match_1.group(1)
 
         global_scope = frame.f_globals
         local_scope = frame.f_locals
@@ -75,8 +90,12 @@ class Defer:
                 # The value does not exist, so there is nothing to store.
                 continue
 
-            dummy_code_bytes += build_code_bytes(Opcode.LOAD_CONST, len(dummy_consts))
-            dummy_code_bytes += build_code_bytes(Opcode.STORE_FAST, i_local_var)
+            dummy_code_bytes += build_instruction_code_bytes(
+                Opcode.LOAD_CONST, len(dummy_consts)
+            )
+            dummy_code_bytes += build_instruction_code_bytes(
+                Opcode.STORE_FAST, i_local_var
+            )
             dummy_consts += (value,)
 
         # If the original function has cell variables, add some instructions of
@@ -93,12 +112,14 @@ class Defer:
                 i_local_var = None
 
             if i_local_var is not None:
-                dummy_code_bytes += build_code_bytes(Opcode.MAKE_CELL, i_local_var)
+                dummy_code_bytes += build_instruction_code_bytes(
+                    Opcode.MAKE_CELL, i_local_var
+                )
             else:
                 i_nonlocal_cell_var = next_i_nonlocal_cell_var
                 next_i_nonlocal_cell_var += 1
 
-                dummy_code_bytes += build_code_bytes(
+                dummy_code_bytes += build_instruction_code_bytes(
                     Opcode.MAKE_CELL, i_nonlocal_cell_var
                 )
 
@@ -106,10 +127,10 @@ class Defer:
                     # The value does not exist, so there is nothing to store.
                     continue
 
-                dummy_code_bytes += build_code_bytes(
+                dummy_code_bytes += build_instruction_code_bytes(
                     Opcode.LOAD_CONST, len(dummy_consts)
                 )
-                dummy_code_bytes += build_code_bytes(
+                dummy_code_bytes += build_instruction_code_bytes(
                     Opcode.STORE_DEREF, i_nonlocal_cell_var
                 )
                 dummy_consts += (value,)
@@ -127,26 +148,16 @@ class Defer:
                 )
                 for name in free_var_names
             )
-            dummy_code_bytes += build_code_bytes(Opcode.COPY_FREE_VARS, n_free_vars)
+            dummy_code_bytes += build_instruction_code_bytes(
+                Opcode.COPY_FREE_VARS, n_free_vars
+            )
 
         # Copy the bytecode of the RHS part in `defer and ...` into the dummy function.
-        n_skipped_instructions = code_bytes[i_code_byte + _jumping_start_offset + 1]
-        n_skipped_bytes = n_skipped_instructions * 2
-        dummy_code_bytes += code_bytes[
-            (i_code_byte + _rhs_offset) : (
-                i_code_byte + _jumping_stop_offset + n_skipped_bytes
-            )
-        ]
-
-        # For Python 3.13, if the current expression is the last expression in a loop,
-        # there will be a duplicated `POP_TOP + JUMP_BACKWARD` instruction pair.
-        # Cut it off before it can cause any trouble.
-        if sequence_has_suffix(dummy_code_bytes, _unneeded_code_bytes_suffix):
-            dummy_code_bytes = dummy_code_bytes[: -len(_unneeded_code_bytes_suffix)]
+        dummy_code_bytes += code_bytes_2
 
         # The dummy function should return something. The simplest way is to return
         # whatever value is currently active.
-        dummy_code_bytes += build_code_bytes(Opcode.RETURN_VALUE)
+        dummy_code_bytes += build_instruction_code_bytes(Opcode.RETURN_VALUE)
 
         # The dummy function will be called with no argument.
         dummy_code = code.replace(
@@ -170,58 +181,43 @@ class Defer:
         return False
 
 
-_expected_code_bytes_prefix: list[int]
-"""
-Code bytes pattern when `defer.__bool__()` is invoked upon `defer and ...`.
-"""
-
-_jumping_start_offset: int
-"""
-Distance in bytes between the current instruction and the jumping instruction.
-"""
-
-_jumping_stop_offset: int
-"""
-Distance in bytes between the current instruction and the next instruction to the
-jumping instruction.
-"""
-
-_rhs_offset: int
-"""
-Distance in bytes between the current instruction and the instructions of RHS in
-`defer and ...`.
-"""
-
-
 if sys.version_info >= (3, 13) and sys.version_info < (3, 14):
     # ```
     #     LOAD_GLOBAL ? (defer)
     #     COPY
     # --> TO_BOOL
     #     POP_JUMP_IF_FALSE ?
-    #     CACHE
     #     POP_TOP
     #     <???>
     # ```
 
-    _expected_code_bytes_prefix = []
-
-    _expected_code_bytes_prefix.extend(
-        build_code_byte_sequence(Opcode.TO_BOOL, cache_value=WILDCARD)
+    _pattern_0 = re.compile(
+        pattern=(
+            (
+                "%(TO_BOOL)s(%(POP_JUMP_IF_FALSE)s)(%(POP_TOP)s.*)"
+                % {
+                    "TO_BOOL": build_instruction_pattern(Opcode.TO_BOOL),
+                    "POP_JUMP_IF_FALSE": build_instruction_pattern(
+                        Opcode.POP_JUMP_IF_FALSE
+                    ),
+                    "POP_TOP": build_instruction_pattern(Opcode.POP_TOP),
+                }
+            ).encode("iso8859-1")
+        ),
+        flags=re.DOTALL,
     )
-    _jumping_start_offset = len(_expected_code_bytes_prefix)
-
-    _expected_code_bytes_prefix.extend(
-        build_code_byte_sequence(
-            Opcode.POP_JUMP_IF_FALSE, WILDCARD, cache_value=WILDCARD
-        )
+    _pattern_1 = re.compile(
+        pattern=(
+            (
+                "%(POP_TOP)s(.*?)(?:%(POP_TOP)s%(JUMP_BACKWARD)s)?"
+                % {
+                    "POP_TOP": build_instruction_pattern(Opcode.POP_TOP),
+                    "JUMP_BACKWARD": build_instruction_pattern(Opcode.JUMP_BACKWARD),
+                }
+            ).encode("iso8859-1")
+        ),
+        flags=re.DOTALL,
     )
-    _jumping_stop_offset = len(_expected_code_bytes_prefix)
-
-    _expected_code_bytes_prefix.extend(
-        build_code_byte_sequence(Opcode.POP_TOP, cache_value=WILDCARD)
-    )
-    _rhs_offset = len(_expected_code_bytes_prefix)
 
 if sys.version_info >= (3, 12) and sys.version_info < (3, 13):
     # ```
@@ -232,20 +228,31 @@ if sys.version_info >= (3, 12) and sys.version_info < (3, 13):
     #     <???>
     # ```
 
-    _expected_code_bytes_prefix = []
-    _jumping_start_offset = 0
-
-    _expected_code_bytes_prefix.extend(
-        build_code_byte_sequence(
-            Opcode.POP_JUMP_IF_FALSE, WILDCARD, cache_value=WILDCARD
-        )
+    _pattern_0 = re.compile(
+        pattern=(
+            (
+                "(%(POP_JUMP_IF_FALSE)s)(%(POP_TOP)s.*)"
+                % {
+                    "POP_JUMP_IF_FALSE": build_instruction_pattern(
+                        Opcode.POP_JUMP_IF_FALSE
+                    ),
+                    "POP_TOP": build_instruction_pattern(Opcode.POP_TOP),
+                }
+            ).encode("iso8859-1")
+        ),
+        flags=re.DOTALL,
     )
-    _jumping_stop_offset = len(_expected_code_bytes_prefix)
-
-    _expected_code_bytes_prefix.extend(
-        build_code_byte_sequence(Opcode.POP_TOP, cache_value=WILDCARD)
+    _pattern_1 = re.compile(
+        pattern=(
+            (
+                "%(POP_TOP)s(.*)"
+                % {
+                    "POP_TOP": build_instruction_pattern(Opcode.POP_TOP),
+                }
+            ).encode("iso8859-1")
+        ),
+        flags=re.DOTALL,
     )
-    _rhs_offset = len(_expected_code_bytes_prefix)
 
 if sys.version_info >= (3, 11) and sys.version_info < (3, 12):
     # ```
@@ -254,22 +261,23 @@ if sys.version_info >= (3, 11) and sys.version_info < (3, 12):
     #     <???>
     # ```
 
-    _expected_code_bytes_prefix = []
-    _jumping_start_offset = 0
-
-    _expected_code_bytes_prefix.extend(
-        build_code_byte_sequence(
-            Opcode.JUMP_IF_FALSE_OR_POP, WILDCARD, cache_value=WILDCARD
-        )
+    _pattern_0 = re.compile(
+        pattern=(
+            (
+                "(%(JUMP_IF_FALSE_OR_POP)s)(.*)"
+                % {
+                    "JUMP_IF_FALSE_OR_POP": build_instruction_pattern(
+                        Opcode.JUMP_IF_FALSE_OR_POP
+                    ),
+                }
+            ).encode("iso8859-1")
+        ),
+        flags=re.DOTALL,
     )
-    _jumping_stop_offset = len(_expected_code_bytes_prefix)
-    _rhs_offset = _jumping_stop_offset
-
-
-_unneeded_code_bytes_suffix = (
-    *build_code_byte_sequence(Opcode.POP_TOP, cache_value=WILDCARD),
-    *build_code_byte_sequence(Opcode.JUMP_BACKWARD, WILDCARD, cache_value=WILDCARD),
-)
+    _pattern_1 = re.compile(
+        pattern="(.*)".encode("iso8859-1"),
+        flags=re.DOTALL,
+    )
 
 
 @final

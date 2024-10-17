@@ -2,12 +2,12 @@ from __future__ import annotations
 
 __all__ = [
     "Opcode",
-    "build_code_byte_sequence",
-    "build_code_bytes",
+    "build_instruction_code_bytes",
+    "build_instruction_pattern",
+    "extract_argument_from_instruction",
 ]
 
 import sys
-from collections.abc import Sequence
 from enum import IntEnum
 from types import MappingProxyType
 from typing import cast
@@ -22,6 +22,7 @@ class Opcode(IntEnum):
     """
 
     COPY_FREE_VARS = opmap["COPY_FREE_VARS"]
+    EXTENDED_ARG = opmap["EXTENDED_ARG"]
     JUMP_BACKWARD = opmap["JUMP_BACKWARD"]
     LOAD_CONST = opmap["LOAD_CONST"]
     LOAD_NAME = opmap["LOAD_NAME"]
@@ -53,11 +54,56 @@ _n_caches_map = MappingProxyType(
 )
 
 
-def build_code_bytes(opcode: Opcode, arg: int = 0) -> bytes:
-    return bytes(build_code_byte_sequence(opcode, arg))
+def build_instruction_code_bytes(opcode: Opcode, argument: int = 0) -> bytes:
+    assert 0 <= opcode <= ((1 << 8) - 1)
+    assert 0 <= argument <= ((1 << 32) - 1)
+
+    if argument >= (1 << 24):
+        n_argument_bytes = 4
+    elif argument >= (1 << 16):
+        n_argument_bytes = 3
+    elif argument >= (1 << 8):
+        n_argument_bytes = 2
+    else:
+        n_argument_bytes = 1
+    argument_bytes = argument.to_bytes(n_argument_bytes, "big", signed=False)
+
+    code_byte_list: list[int] = []
+    for argument_byte in argument_bytes[:-1]:
+        code_byte_list.append(Opcode.EXTENDED_ARG)
+        code_byte_list.append(argument_byte)
+    code_byte_list.append(opcode)
+    code_byte_list.append(argument_bytes[-1])
+    for __ in range(_n_caches_map[opcode] * 2):
+        code_byte_list.append(0)
+
+    code_bytes = bytes(code_byte_list)
+    return code_bytes
 
 
-def build_code_byte_sequence(
-    opcode: Opcode, arg: int = 0, *, cache_value: int = 0
-) -> Sequence[int]:
-    return [opcode, arg] + [cache_value] * (_n_caches_map[opcode] * 2)
+def build_instruction_pattern(opcode: Opcode) -> str:
+    s = (
+        ######
+        r"(?:\x%(EXTENDED_ARG)02x.){0,3}\x%(opcode)02x."
+        % {"EXTENDED_ARG": Opcode.EXTENDED_ARG, "opcode": opcode}
+        ######
+    )
+
+    n_caches = _n_caches_map[opcode]
+    if n_caches > 0:
+        s += ".{%d}" % (n_caches * 2)
+
+    return s
+
+
+def extract_argument_from_instruction(code_bytes: bytes, /) -> int:
+    argument = 0
+
+    for i in range(0, len(code_bytes), 2):
+        argument <<= 8
+        argument |= code_bytes[i + 1]
+
+        if code_bytes[i] != Opcode.EXTENDED_ARG:
+            break
+
+    return argument
