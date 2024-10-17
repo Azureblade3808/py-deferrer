@@ -58,14 +58,7 @@ def build_instruction_code_bytes(opcode: Opcode, argument: int = 0) -> bytes:
     assert 0 <= opcode <= ((1 << 8) - 1)
     assert 0 <= argument <= ((1 << 32) - 1)
 
-    if argument >= (1 << 24):
-        n_argument_bytes = 4
-    elif argument >= (1 << 16):
-        n_argument_bytes = 3
-    elif argument >= (1 << 8):
-        n_argument_bytes = 2
-    else:
-        n_argument_bytes = 1
+    n_argument_bytes = 1 if argument == 0 else (argument.bit_length() + 7) // 8
     argument_bytes = argument.to_bytes(n_argument_bytes, "big", signed=False)
 
     code_byte_list: list[int] = []
