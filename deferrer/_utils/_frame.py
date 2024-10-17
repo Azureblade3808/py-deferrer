@@ -7,11 +7,11 @@ __all__ = [
     "is_global_frame",
 ]
 
+import re
 import sys
-from collections.abc import Sequence
 from types import FrameType
 
-from ._opcode import Opcode
+from ._opcode import Opcode, build_instruction_pattern
 
 
 def get_current_frame() -> FrameType:
@@ -123,34 +123,39 @@ def is_class_frame(frame: FrameType, /) -> bool:
     code = frame.f_code
 
     names = code.co_names
-    if not _sequence_has_prefix(names, ("__name__", "__module__", "__qualname__")):
+    if (
+        len(names) < 3
+        or names[0] != "__name__"
+        or names[1] != "__module__"
+        or names[2] != "__qualname__"
+    ):
         return False
 
     code_bytes = code.co_code
-    # In some cases (e.g. embedded class), there may be a COPY_FREE_VARS instruction.
-    if _sequence_has_prefix(code_bytes, (Opcode.COPY_FREE_VARS,)):
-        code_bytes = code_bytes[2:]
-    if not _sequence_has_prefix(
-        code_bytes,
-        (
-            Opcode.RESUME,
-            0,
-            Opcode.LOAD_NAME,
-            0,  # __name__
-            Opcode.STORE_NAME,
-            1,  # __module__
-            Opcode.LOAD_CONST,
-            0,
-            Opcode.STORE_NAME,
-            2,  # __qualname__
-        ),
-    ):
+    if re.match(_PATTERN, code_bytes) is None:
         return False
 
     return True
 
 
-def _sequence_has_prefix(
-    sequence: Sequence[object], prefix: Sequence[object], /
-) -> bool:
-    return tuple(sequence[: len(prefix)]) == tuple(prefix)
+_PATTERN = re.compile(
+    pattern=(
+        "".join(
+            [
+                # "COPY_FREE_VARS ?". Optional.
+                "(?:%s)?" % build_instruction_pattern(Opcode.COPY_FREE_VARS),
+                # "RESUME". Optional.
+                "(?:%s)?" % build_instruction_pattern(Opcode.RESUME),
+                # "LOAD_NAME 0 (__name__)".
+                build_instruction_pattern(Opcode.LOAD_NAME, 0),
+                # "STORE_NAME 1 (__module__)".
+                build_instruction_pattern(Opcode.STORE_NAME, 1),
+                # "LOAD_CONST 0 {qualname}".
+                build_instruction_pattern(Opcode.LOAD_CONST, 0),
+                # "STORE_NAME 2 (__qualname__)"
+                build_instruction_pattern(Opcode.STORE_NAME, 2),
+            ]
+        ).encode("iso8859-1")
+    ),
+    flags=re.DOTALL,
+)

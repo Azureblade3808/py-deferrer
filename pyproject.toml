@@ -156,7 +156,6 @@ addopts = [
     "--doctest-modules",
     "--doctest-glob=*.md",
     "--cov=deferrer",
-    "--cov-append",
     "--cov-report=xml",
     "--ignore-glob=**/samples/*",
 ]
