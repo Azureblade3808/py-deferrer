@@ -50,7 +50,7 @@ class Defer:
             i_code_byte = temp_i_code_byte
         code_bytes_0 = code_bytes[i_code_byte:]
 
-        match_0 = re.match(_pattern_0, code_bytes_0)
+        match_0 = re.match(_PATTERN_0, code_bytes_0)
         if match_0 is None:
             code_location = get_code_location(frame)
             message = (
@@ -70,7 +70,7 @@ class Defer:
         n_skipped_bytes = extract_argument_from_instruction(match_0.group(1)) * 2
         code_bytes_1 = match_0.group(2)[:n_skipped_bytes]
 
-        match_1 = re.fullmatch(_pattern_1, code_bytes_1)
+        match_1 = re.fullmatch(_PATTERN_1, code_bytes_1)
         assert match_1 is not None
         code_bytes_2 = match_1.group(1)
 
@@ -191,7 +191,7 @@ if sys.version_info >= (3, 13) and sys.version_info < (3, 14):
     #     <???>
     # ```
 
-    _pattern_0 = re.compile(
+    _PATTERN_0 = re.compile(
         pattern=(
             (
                 "%(TO_BOOL)s(%(POP_JUMP_IF_FALSE)s)(%(POP_TOP)s.*)"
@@ -206,7 +206,7 @@ if sys.version_info >= (3, 13) and sys.version_info < (3, 14):
         ),
         flags=re.DOTALL,
     )
-    _pattern_1 = re.compile(
+    _PATTERN_1 = re.compile(
         pattern=(
             (
                 "%(POP_TOP)s(.*?)(?:%(POP_TOP)s%(JUMP_BACKWARD)s)?"
@@ -228,7 +228,7 @@ if sys.version_info >= (3, 12) and sys.version_info < (3, 13):
     #     <???>
     # ```
 
-    _pattern_0 = re.compile(
+    _PATTERN_0 = re.compile(
         pattern=(
             (
                 "(%(POP_JUMP_IF_FALSE)s)(%(POP_TOP)s.*)"
@@ -242,7 +242,7 @@ if sys.version_info >= (3, 12) and sys.version_info < (3, 13):
         ),
         flags=re.DOTALL,
     )
-    _pattern_1 = re.compile(
+    _PATTERN_1 = re.compile(
         pattern=(
             (
                 "%(POP_TOP)s(.*)"
@@ -261,7 +261,7 @@ if sys.version_info >= (3, 11) and sys.version_info < (3, 12):
     #     <???>
     # ```
 
-    _pattern_0 = re.compile(
+    _PATTERN_0 = re.compile(
         pattern=(
             (
                 "(%(JUMP_IF_FALSE_OR_POP)s)(.*)"
@@ -274,7 +274,7 @@ if sys.version_info >= (3, 11) and sys.version_info < (3, 12):
         ),
         flags=re.DOTALL,
     )
-    _pattern_1 = re.compile(
+    _PATTERN_1 = re.compile(
         pattern="(.*)".encode("iso8859-1"),
         flags=re.DOTALL,
     )

@@ -58,8 +58,7 @@ def build_instruction_code_bytes(opcode: Opcode, argument: int = 0) -> bytes:
     assert 0 <= opcode <= ((1 << 8) - 1)
     assert 0 <= argument <= ((1 << 32) - 1)
 
-    n_argument_bytes = 1 if argument == 0 else (argument.bit_length() + 7) // 8
-    argument_bytes = argument.to_bytes(n_argument_bytes, "big", signed=False)
+    argument_bytes = _get_bytes(argument)
 
     code_byte_list: list[int] = []
     for argument_byte in argument_bytes[:-1]:
@@ -74,19 +73,34 @@ def build_instruction_code_bytes(opcode: Opcode, argument: int = 0) -> bytes:
     return code_bytes
 
 
-def build_instruction_pattern(opcode: Opcode) -> str:
-    s = (
-        ######
-        r"(?:\x%(EXTENDED_ARG)02x.){0,3}\x%(opcode)02x."
-        % {"EXTENDED_ARG": Opcode.EXTENDED_ARG, "opcode": opcode}
-        ######
-    )
+def build_instruction_pattern(opcode: Opcode, argument: int | None = None) -> str:
+    if argument is None:
+        argument_bytes = None
+    else:
+        argument_bytes = _get_bytes(argument)
+
+    pattern = ""
+
+    if argument_bytes is None:
+        pattern += r"(?:\x%02x.){0,3}" % Opcode.EXTENDED_ARG
+    else:
+        pattern += "".join(
+            r"\x%02x\x%02x" % (Opcode.EXTENDED_ARG, argument_byte)
+            for argument_byte in argument_bytes[:-1]
+        )
+
+    pattern += r"\x%02x" % opcode
+
+    if argument_bytes is None:
+        pattern += "."
+    else:
+        pattern += r"\x%02x" % argument_bytes[-1]
 
     n_caches = _n_caches_map[opcode]
     if n_caches > 0:
-        s += ".{%d}" % (n_caches * 2)
+        pattern += ".{%d}" % (n_caches * 2)
 
-    return s
+    return pattern
 
 
 def extract_argument_from_instruction(code_bytes: bytes, /) -> int:
@@ -100,3 +114,10 @@ def extract_argument_from_instruction(code_bytes: bytes, /) -> int:
             break
 
     return argument
+
+
+def _get_bytes(value: int, /) -> bytes:
+    assert value >= 0
+    n_bytes = 1 if value == 0 else (value.bit_length() + 7) // 8
+    bytes_ = value.to_bytes(n_bytes, "big", signed=False)
+    return bytes_
