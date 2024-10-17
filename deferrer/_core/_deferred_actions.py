@@ -13,7 +13,7 @@ __all__ = [
 import sys
 from abc import ABC, abstractmethod
 from types import FrameType
-from typing import TYPE_CHECKING, Any, Final, Never, cast, final
+from typing import Any, Final, Never, cast, final
 
 from .._utils import is_class_frame, is_global_frame
 
@@ -76,11 +76,6 @@ class CallableDeferredActionsRecorder:
     callables.
     """
 
-    # Makes this class seemingly not instantiable.
-    if TYPE_CHECKING:
-
-        def __new__(cls: Never, /) -> Never: ...
-
     _internal_dict: Final[dict[FrameType, DeferredActions]]
 
     def __init__(self, /) -> None:
@@ -103,10 +98,7 @@ class CallableDeferredActionsRecorder:
         return deferred_actions
 
 
-callable_deferred_actions_recorder = (
-    # We know that the class is in fact instantiable.
-    CallableDeferredActionsRecorder()  # type: ignore
-)
+callable_deferred_actions_recorder = CallableDeferredActionsRecorder()
 """
 The singleton instance of `CallableDeferredActionsRecorder`.
 """
@@ -118,11 +110,6 @@ class ContextDeferredActionsRecorder:
     A recorder that records `DeferredActions` objects associated with
     context managers.
     """
-
-    # Makes this class seemingly not instantiable.
-    if TYPE_CHECKING:
-
-        def __new__(cls: Never, /) -> Never: ...
 
     _internal_dict: Final[dict[FrameType, list[DeferredActions]]]
 
@@ -152,10 +139,7 @@ class ContextDeferredActionsRecorder:
         return deferred_actions
 
 
-context_deferred_actions_recorder = (
-    # We know that the class is in fact instantiable.
-    ContextDeferredActionsRecorder()  # type: ignore
-)
+context_deferred_actions_recorder = ContextDeferredActionsRecorder()
 """
 The singleton instance of `ContextDeferredActionsRecorder`.
 """
