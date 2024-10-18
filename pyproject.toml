@@ -161,9 +161,10 @@ addopts = [
 ]
 
 
-[tool.setuptools]
-packages = ["deferrer"]
-
-
 [tool.setuptools.dynamic]
 version = { attr = "deferrer.__version__" }
+
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["deferrer", "deferrer.*"]
