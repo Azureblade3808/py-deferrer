@@ -80,9 +80,7 @@ deferred
 
 You can use `defer_scope` to declare a code range that deferred actions should be gathered in and executed after.
 
-It's not rare that you may want to defer some actions in a loop and get them executed at the end of each cycle. But unlike some other languages, loops in Python don't create new scopes, which makes it inconvenient to use `defer` in them. `defer_scope` can be used to wrap an iterable to gather deferred actions in each iteration and execute them at the end of the iteration.
-
-Example:
+It's not rare that you may want to defer some actions in a loop and get them executed at the end of each cycle. But unlike some other languages, loops in Python don't create new scopes, which makes it inconvenient to use `defer` in them. `defer_scope` can be used to wrap an iterable to gather deferred actions in each iteration and execute them at the end of the iteration. Example:
 
 ```python
 >>> from deferrer import defer, defer_scope
@@ -102,9 +100,7 @@ deferred 2
 
 ```
 
-Sometimes, you may want to use `defer` outside of a function. `defer_scope` can be used as a context manager to gather deferred actions when it's entered and execute them when it's exited.
-
-Example:
+Sometimes, you may want to use `defer` outside of a function. `defer_scope` can be used as a context manager to gather deferred actions when it's entered and execute them when it's exited. Example:
 
 ```python
 >>> from deferrer import defer, defer_scope
