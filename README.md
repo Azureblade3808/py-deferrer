@@ -53,7 +53,7 @@ deferred
 
 ```
 
-Note that when the deferred function can be invoke with no arguments, it is no necessary to call it a second time, so that `defer` can be used as a decorator. Example:
+Note that when the deferred function can be invoke with no arguments, an empty call is not required, which means `defer` can be used as a decorator. Example:
 
 ```python
 >>> from deferrer import defer
