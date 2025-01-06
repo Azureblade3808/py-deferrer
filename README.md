@@ -1,29 +1,26 @@
-# Fancy `defer` for Python >= 3.12
+# Fancy `defer` for Python >= 3.12 (partially supported in Python 3.11)
 
 [![Python package](https://github.com/Azureblade3808/py-deferrer/actions/workflows/python-package.yml/badge.svg)](https://github.com/Azureblade3808/py-deferrer/actions/workflows/python-package.yml)
 [![Coverage Status](https://coveralls.io/repos/github/Azureblade3808/py-deferrer/badge.svg)](https://coveralls.io/github/Azureblade3808/py-deferrer)
 
-## Installation and usage
-
-### Installation
+## Installation
 
 You may install `deferrer` by running `pip install deferrer`.
 
-### Usage
+## Usage
+
+### `defer`
 
 There are two designed ways to use `defer`. You may use either of them, or mix them up.
 
-#### Sugarful
+One is to use `defer` as a syntactic sugar in the form of `defer and ...`. Example:
 
 ```python
 >>> from deferrer import defer
 
 >>> def f():
-...     defer and print(0)
-...     defer and print(1)
-...     print(2)
-...     defer and print(3)
-...     defer and print(4)
+...     defer and print("deferred")
+...     print("normal")
 
 >>> import sys
 >>> if sys.version_info < (3, 12):
@@ -31,25 +28,19 @@ There are two designed ways to use `defer`. You may use either of them, or mix t
 ...     f = defer_scope(f)
 
 >>> f()
-2
-4
-3
-1
-0
+normal
+deferred
 
 ```
 
-#### Sugarless
+The other is to use `defer` as a function wrapper. Example:
 
 ```python
 >>> from deferrer import defer
 
 >>> def f():
-...     defer(print)(0)
-...     defer(print)(1)
-...     print(2)
-...     defer(print)(3)
-...     defer(print)(4)
+...     defer(print)("deferred")
+...     print("normal")
 
 >>> import sys
 >>> if sys.version_info < (3, 12):
@@ -57,10 +48,82 @@ There are two designed ways to use `defer`. You may use either of them, or mix t
 ...     f = defer_scope(f)
 
 >>> f()
-2
-4
-3
-1
-0
+normal
+deferred
 
 ```
+
+Note that when the deferred function can be invoke with no arguments, it is no necessary to call it a second time, so that `defer` can be used as a decorator. Example:
+
+```python
+>>> from deferrer import defer
+
+>>> def f():
+...     @defer
+...     def _():
+...         print("deferred")
+...
+...     print("normal")
+
+>>> import sys
+>>> if sys.version_info < (3, 12):
+...     from deferrer import defer_scope
+...     f = defer_scope(f)
+
+>>> f()
+normal
+deferred
+
+```
+
+### `defer_scope`
+
+You can use `defer_scope` to declare a code range that deferred actions should be gathered in and executed after.
+
+It's not rare that you may want to defer some actions in a loop and get them executed at the end of each cycle. But unlike some other languages, loops in Python don't create new scopes, which makes it inconvenient to use `defer` in them. `defer_scope` can be used to wrap an iterable to gather deferred actions in each iteration and execute them at the end of the iteration.
+
+Example:
+
+```python
+>>> from deferrer import defer, defer_scope
+
+>>> def f():
+...     for i in defer_scope(range(3)):
+...         defer and print("deferred", i)
+...         print("normal", i)
+
+>>> f()
+normal 0
+deferred 0
+normal 1
+deferred 1
+normal 2
+deferred 2
+
+```
+
+Sometimes, you may want to use `defer` outside of a function. `defer_scope` can be used as a context manager to gather deferred actions when it's entered and execute them when it's exited.
+
+Example:
+
+```python
+>>> from deferrer import defer, defer_scope
+
+>>> with defer_scope():
+...     # Note that `defer and ...` itself is an expression, and
+...     # its value (i.e. the `defer` object) may get printed by
+...     # some interpretters.
+...     # Use an assignment to suppress the printing behavior.
+...     _ = defer and print("deferred")
+...     print("normal")
+normal
+deferred
+
+```
+
+Also, `defer_scope` can be used to wrap a function to help `defer` to work properly in Python 3.11. Note that `locals()` in Python 3.11 returns a copy of the local scope, which makes it impossible for `defer` to inject deferred actions into the real local scope, so without a `defer_scope`, deferred actions will be executed immediately after they are evaluated.
+
+## Known Limitations
+
+-   `deferrer` has only been tested on CPython. It may not work on other Python implementations.
+-   `defer` must not be used together with `await`. Code like `defer and await ...` is syntactically acceptable but will cause segmentetation fault without being detected beforehand.
