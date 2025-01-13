@@ -30,6 +30,11 @@ Homepage = "https://github.com/Azureblade3808/py-deferrer"
 "Bug Tracker" = "https://github.com/Azureblade3808/py-deferrer/issues"
 
 
+[tool.black]
+line-length = 120
+skip-magic-trailing-comma = true
+
+
 [tool.isort]
 profile = "black"
 

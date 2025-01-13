@@ -9,11 +9,7 @@ from functools import update_wrapper
 from types import FrameType, TracebackType
 from typing import Any, Final, Generic, ParamSpec, TypeVar, final, overload
 
-from ._deferred_actions import (
-    DeferredActions,
-    callable_deferred_actions_recorder,
-    context_deferred_actions_recorder,
-)
+from ._deferred_actions import DeferredActions, callable_deferred_actions_recorder, context_deferred_actions_recorder
 from .._utils import get_current_frame, get_outer_frame
 
 _Wrapped_t = TypeVar("_Wrapped_t")
@@ -56,11 +52,7 @@ class _DeferScopeContextManager(AbstractContextManager):
         return self
 
     def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
-        /,
+        self, exc_type: type[BaseException] | None, exc_value: BaseException | None, traceback: TracebackType | None, /
     ) -> None:
         frame = self._frame
         assert frame is not None
@@ -76,12 +68,7 @@ class _DeferScopeWrapper(Generic[_Wrapped_t]):
     def __init__(self, wrapped: _Wrapped_t, /) -> None:
         self._wrapped: Final = wrapped
 
-    def __call__(
-        self: _DeferScopeWrapper[Callable[_P, _R]],
-        /,
-        *args: _P.args,
-        **kwargs: _P.kwargs,
-    ) -> _R:
+    def __call__(self: _DeferScopeWrapper[Callable[_P, _R]], /, *args: _P.args, **kwargs: _P.kwargs) -> _R:
         frame = get_current_frame()
 
         deferred_actions = callable_deferred_actions_recorder.setup(frame)

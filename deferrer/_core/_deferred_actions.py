@@ -148,26 +148,19 @@ The singleton instance of `ContextDeferredActionsRecorder`.
 def ensure_deferred_actions(
     frame: FrameType,
     *,
-    # We are using a newly created `object` instance as a secret key in local scopes
-    # so that it will never conflict with any existing key.
-    # It is intentially typed as `Never` so that it will never be assigned another value
-    # when the function is getting called.
-    __KEY__: Never = cast(
-        "Any",
-        object(),  # pyright: ignore[reportCallInDefaultInitializer]
-    ),
+    # We are using a newly created `object` instance as a secret key in local scopes so that it will never conflict with
+    # any existing key.
+    # It is intentially typed as `Never` so that it will never be assigned another value when the function is getting
+    # called.
+    __KEY__: Never = cast("Any", object()),  # pyright: ignore[reportCallInDefaultInitializer]
 ) -> DeferredActions:
     """
     Returns the most active `DeferredActions` object for the given
     frame.
     """
 
-    # Try to find one in `context_deferred_actions_recorder` and then
-    # `callable_deferred_actions_recorder`.
-    for recorder in (
-        context_deferred_actions_recorder,
-        callable_deferred_actions_recorder,
-    ):
+    # Try to find one in `context_deferred_actions_recorder` and then `callable_deferred_actions_recorder`.
+    for recorder in (context_deferred_actions_recorder, callable_deferred_actions_recorder):
         deferred_actions = recorder.get(frame)
         if deferred_actions is not None:
             return deferred_actions
@@ -176,15 +169,9 @@ def ensure_deferred_actions(
 
     # There is no way to inject an object into a local scope in Python 3.11.
     if sys.version_info < (3, 12):
-        raise RuntimeError(
-            (
-                "cannot inject deferred actions into local scope with"
-                " Python older than 3.12"
-            )
-        )
+        raise RuntimeError("cannot inject deferred actions into local scope with Python older than 3.12")
 
-    # If we injected an object into a global scope or a class scope, it would not get
-    # released in time.
+    # If we injected an object into a global scope or a class scope, it would not get released in time.
     if is_global_frame(frame):
         raise RuntimeError("cannot inject deferred actions into global scope")
     if is_class_frame(frame):

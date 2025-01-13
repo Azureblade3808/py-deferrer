@@ -1303,28 +1303,7 @@ class Test__defer:
             f = defer_scope(f)
 
         f()
-        assert nums == [
-            2,
-            -3,
-            3,
-            1,
-            -2,
-            -3,
-            3,
-            -2,
-            2,
-            2,
-            -3,
-            3,
-            1,
-            -2,
-            -3,
-            3,
-            -2,
-            2,
-            -1,
-            1,
-        ]
+        assert nums == [2, -3, 3, 1, -2, -3, 3, -2, 2, 2, -3, 3, 1, -2, -3, 3, -2, 2, -1, 1]
 
     @staticmethod
     def test__works_with_unbound_variables() -> None:
@@ -1506,6 +1485,7 @@ class Test__defer:
 
         f()
         assert nums == [1, 2, 0]
+
 
 class Test__deferred_call:
     @staticmethod

@@ -1,11 +1,6 @@
 from __future__ import annotations
 
-__all__ = [
-    "Opcode",
-    "build_instruction_code_bytes",
-    "build_instruction_pattern",
-    "extract_argument_from_instruction",
-]
+__all__ = ["Opcode", "build_instruction_code_bytes", "build_instruction_pattern", "extract_argument_from_instruction"]
 
 import sys
 from enum import IntEnum
@@ -46,9 +41,7 @@ class Opcode(IntEnum):
 
 _n_caches_map = MappingProxyType(
     {
-        cast("Opcode", opcode): (
-            0 if (d := _cache_format.get(name)) is None else sum(d.values())
-        )
+        cast("Opcode", opcode): (0 if (d := _cache_format.get(name)) is None else sum(d.values()))
         for name, opcode in Opcode._member_map_.items()
     }
 )
@@ -85,8 +78,7 @@ def build_instruction_pattern(opcode: Opcode, argument: int | None = None) -> st
         pattern += r"(?:\x%02x.){0,3}" % Opcode.EXTENDED_ARG
     else:
         pattern += "".join(
-            r"\x%02x\x%02x" % (Opcode.EXTENDED_ARG, argument_byte)
-            for argument_byte in argument_bytes[:-1]
+            r"\x%02x\x%02x" % (Opcode.EXTENDED_ARG, argument_byte) for argument_byte in argument_bytes[:-1]
         )
 
     pattern += r"\x%02x" % opcode

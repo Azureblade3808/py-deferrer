@@ -69,10 +69,9 @@ class _DeferredCallable(DeferredAction, Generic[_P]):
                 # This `TypeError` was raised by user. We should not do anthing special.
                 raise
 
-            # This `TypeError` was raised on function call, which means that there was
-            # a signature error.
-            # It is typically because a deferred callable with at least one required
-            # argument doesn't ever get further called with appropriate arguments.
+            # This `TypeError` was raised on function call, which means that there was a signature error.
+            # It is typically because a deferred callable with at least one required argument doesn't ever get further
+            # called with appropriate arguments.
             code_location = self._code_location
             message = f"`defer(...)` has never got further called ({code_location})."
             warn(message)

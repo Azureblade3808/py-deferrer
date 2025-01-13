@@ -1,11 +1,6 @@
 from __future__ import annotations
 
-__all__ = [
-    "get_current_frame",
-    "get_outer_frame",
-    "is_class_frame",
-    "is_global_frame",
-]
+__all__ = ["get_current_frame", "get_outer_frame", "is_class_frame", "is_global_frame"]
 
 import re
 import sys
@@ -123,12 +118,7 @@ def is_class_frame(frame: FrameType, /) -> bool:
     code = frame.f_code
 
     names = code.co_names
-    if (
-        len(names) < 3
-        or names[0] != "__name__"
-        or names[1] != "__module__"
-        or names[2] != "__qualname__"
-    ):
+    if len(names) < 3 or names[0] != "__name__" or names[1] != "__module__" or names[2] != "__qualname__":
         return False
 
     code_bytes = code.co_code
