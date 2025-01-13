@@ -117,7 +117,7 @@ deferred
 
 ```
 
-Also, `defer_scope` can be used to wrap a function to help `defer` to work properly in Python 3.11. Note that `locals()` in Python 3.11 returns a copy of the local scope, which makes it impossible for `defer` to inject deferred actions into the real local scope, so without a `defer_scope`, deferred actions will be executed immediately after they are evaluated.
+Also, `defer_scope` can be used to wrap a function to help `defer` to work properly in Python 3.11. Note that `locals()` in Python 3.11 returns a copy of the local scope, which makes it impossible for `defer` to inject deferred actions into the real local scope. Without a function level `defer_scope`, deferred actions would be executed immediately after they are evaluated.
 
 ## Known Limitations
 
