@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-__all__ = ["Defer", "defer"]
+__all__ = ["defer"]
 
 from . import _sugarful, _sugarless
 
