@@ -31,8 +31,13 @@ Homepage = "https://github.com/Azureblade3808/py-deferrer"
 
 
 [tool.black]
+enable-unstable-feature = [
+    "hug_parens_with_braces_and_square_brackets",
+    "string_processing",
+]
 line-length = 120
 skip-magic-trailing-comma = true
+preview = true
 
 
 [tool.isort]

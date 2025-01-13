@@ -39,12 +39,10 @@ class Opcode(IntEnum):
         JUMP_IF_FALSE_OR_POP = opmap["JUMP_IF_FALSE_OR_POP"]
 
 
-_n_caches_map = MappingProxyType(
-    {
-        cast("Opcode", opcode): (0 if (d := _cache_format.get(name)) is None else sum(d.values()))
-        for name, opcode in Opcode._member_map_.items()
-    }
-)
+_n_caches_map = MappingProxyType({
+    cast("Opcode", opcode): (0 if (d := _cache_format.get(name)) is None else sum(d.values()))
+    for name, opcode in Opcode._member_map_.items()
+})
 
 
 def build_instruction_code_bytes(opcode: Opcode, argument: int = 0) -> bytes:

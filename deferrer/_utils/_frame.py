@@ -130,22 +130,20 @@ def is_class_frame(frame: FrameType, /) -> bool:
 
 _PATTERN = re.compile(
     pattern=(
-        "".join(
-            [
-                # "COPY_FREE_VARS ?". Optional.
-                "(?:%s)?" % build_instruction_pattern(Opcode.COPY_FREE_VARS),
-                # "RESUME". Optional.
-                "(?:%s)?" % build_instruction_pattern(Opcode.RESUME),
-                # "LOAD_NAME 0 (__name__)".
-                build_instruction_pattern(Opcode.LOAD_NAME, 0),
-                # "STORE_NAME 1 (__module__)".
-                build_instruction_pattern(Opcode.STORE_NAME, 1),
-                # "LOAD_CONST 0 {qualname}".
-                build_instruction_pattern(Opcode.LOAD_CONST, 0),
-                # "STORE_NAME 2 (__qualname__)"
-                build_instruction_pattern(Opcode.STORE_NAME, 2),
-            ]
-        ).encode("iso8859-1")
+        "".join([
+            # "COPY_FREE_VARS ?". Optional.
+            "(?:%s)?" % build_instruction_pattern(Opcode.COPY_FREE_VARS),
+            # "RESUME". Optional.
+            "(?:%s)?" % build_instruction_pattern(Opcode.RESUME),
+            # "LOAD_NAME 0 (__name__)".
+            build_instruction_pattern(Opcode.LOAD_NAME, 0),
+            # "STORE_NAME 1 (__module__)".
+            build_instruction_pattern(Opcode.STORE_NAME, 1),
+            # "LOAD_CONST 0 {qualname}".
+            build_instruction_pattern(Opcode.LOAD_CONST, 0),
+            # "STORE_NAME 2 (__qualname__)"
+            build_instruction_pattern(Opcode.STORE_NAME, 2),
+        ]).encode("iso8859-1")
     ),
     flags=re.DOTALL,
 )

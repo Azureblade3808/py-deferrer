@@ -51,9 +51,8 @@ class Defer:
         if match_0 is None:
             code_location = get_code_location(frame)
             message = (
-                f"Method `defer.__bool__()` is called in an unsupported way ({code_location})."
-                " "
-                "It is only designed to be invoked during `defer and ...`."
+                f"Method `defer.__bool__()` is called in an unsupported way ({code_location}). It is only designed to"
+                " be invoked during `defer and ...`."
             )
             warn(message)
             return False
