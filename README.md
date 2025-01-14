@@ -5,7 +5,21 @@
 
 ## Installation
 
-You may install `deferrer` by running `pip install deferrer`.
+You may install `deferrer` by running
+
+```sh
+# PyPI
+pip install deferrer
+```
+
+or
+
+```sh
+# conda-forge
+conda install -c conda-forge deferrer
+```
+
+.
 
 ## Usage
 
