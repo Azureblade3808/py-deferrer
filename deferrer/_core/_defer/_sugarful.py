@@ -147,7 +147,47 @@ class Defer:
         return False
 
 
-if sys.version_info >= (3, 13) and sys.version_info < (3, 14):
+if sys.version_info >= (3, 15):
+    raise NotImplementedError("Python > 3.14 is not supported yet.")
+elif sys.version_info >= (3, 14):
+    # ```
+    #     LOAD_GLOBAL ? (defer)
+    #     COPY
+    # --> TO_BOOL
+    #     POP_JUMP_IF_FALSE ?
+    #     NOT_TAKEN
+    #     POP_TOP
+    #     <???>
+    # ```
+
+    _PATTERN_0 = re.compile(
+        pattern=(
+            (
+                "%(TO_BOOL)s(%(POP_JUMP_IF_FALSE)s)(%(NOT_TAKEN)s%(POP_TOP)s.*)"
+                % {
+                    "TO_BOOL": build_instruction_pattern(Opcode.TO_BOOL),
+                    "POP_JUMP_IF_FALSE": build_instruction_pattern(Opcode.POP_JUMP_IF_FALSE),
+                    "NOT_TAKEN": build_instruction_pattern(Opcode.NOT_TAKEN),
+                    "POP_TOP": build_instruction_pattern(Opcode.POP_TOP),
+                }
+            ).encode("iso8859-1")
+        ),
+        flags=re.DOTALL,
+    )
+    _PATTERN_1 = re.compile(
+        pattern=(
+            (
+                "%(NOT_TAKEN)s%(POP_TOP)s(.*?)(?:%(POP_TOP)s%(JUMP_BACKWARD)s)?"
+                % {
+                    "NOT_TAKEN": build_instruction_pattern(Opcode.NOT_TAKEN),
+                    "POP_TOP": build_instruction_pattern(Opcode.POP_TOP),
+                    "JUMP_BACKWARD": build_instruction_pattern(Opcode.JUMP_BACKWARD),
+                }
+            ).encode("iso8859-1")
+        ),
+        flags=re.DOTALL,
+    )
+elif sys.version_info >= (3, 13):
     # ```
     #     LOAD_GLOBAL ? (defer)
     #     COPY
@@ -182,8 +222,7 @@ if sys.version_info >= (3, 13) and sys.version_info < (3, 14):
         ),
         flags=re.DOTALL,
     )
-
-if sys.version_info >= (3, 12) and sys.version_info < (3, 13):
+elif sys.version_info >= (3, 12):
     # ```
     #     LOAD_GLOBAL ? (defer)
     #     COPY
@@ -208,8 +247,7 @@ if sys.version_info >= (3, 12) and sys.version_info < (3, 13):
         pattern=(("%(POP_TOP)s(.*)" % {"POP_TOP": build_instruction_pattern(Opcode.POP_TOP)}).encode("iso8859-1")),
         flags=re.DOTALL,
     )
-
-if sys.version_info >= (3, 11) and sys.version_info < (3, 12):
+elif sys.version_info >= (3, 11):
     # ```
     #     LOAD_GLOBAL ? (defer)
     # --> JUMP_IF_FALSE_OR_POP ?
@@ -226,6 +264,8 @@ if sys.version_info >= (3, 11) and sys.version_info < (3, 12):
         flags=re.DOTALL,
     )
     _PATTERN_1 = re.compile(pattern="(.*)".encode("iso8859-1"), flags=re.DOTALL)
+else:
+    raise NotImplementedError("Python < 3.11 is not supported.")
 
 
 @final

@@ -4,11 +4,10 @@ __all__ = ["Opcode", "build_instruction_code_bytes", "build_instruction_pattern"
 
 import sys
 from enum import IntEnum
-from types import MappingProxyType
-from typing import cast
-
 from opcode import _cache_format  # pyright: ignore[reportAttributeAccessIssue]
 from opcode import opmap
+from types import MappingProxyType
+from typing import cast
 
 
 class Opcode(IntEnum):
@@ -29,6 +28,9 @@ class Opcode(IntEnum):
     STORE_NAME = opmap["STORE_NAME"]
     STORE_DEREF = opmap["STORE_DEREF"]
 
+    if sys.version_info >= (3, 14):
+        NOT_TAKEN = opmap["NOT_TAKEN"]
+
     if sys.version_info >= (3, 13):
         TO_BOOL = opmap["TO_BOOL"]
 
@@ -40,7 +42,7 @@ class Opcode(IntEnum):
 
 
 _n_caches_map = MappingProxyType({
-    cast("Opcode", opcode): (0 if (d := _cache_format.get(name)) is None else sum(d.values()))
+    cast("Opcode", opcode): 0 if (d := _cache_format.get(name)) is None else sum(d.values())
     for name, opcode in Opcode._member_map_.items()
 })
 
