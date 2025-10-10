@@ -22,6 +22,125 @@ from ..._utils import (
 _MISSING = cast("Any", object())
 
 
+assert not sys.version_info < (3, 11), "Python < 3.11 is not supported."
+assert not sys.version_info >= (3, 15), "Python >= 3.15 is not supported yet."
+if sys.version_info >= (3, 14):
+    # ```
+    #     LOAD_GLOBAL ? (defer)
+    #     COPY
+    # --> TO_BOOL
+    #     POP_JUMP_IF_FALSE ?
+    #     NOT_TAKEN
+    #     POP_TOP
+    #     <???>
+    # ```
+
+    _PATTERN_0 = re.compile(
+        pattern=(
+            (
+                "%(TO_BOOL)s(%(POP_JUMP_IF_FALSE)s)(%(NOT_TAKEN)s%(POP_TOP)s.*)"
+                % {
+                    "TO_BOOL": build_instruction_pattern(Opcode.TO_BOOL),
+                    "POP_JUMP_IF_FALSE": build_instruction_pattern(Opcode.POP_JUMP_IF_FALSE),
+                    "NOT_TAKEN": build_instruction_pattern(Opcode.NOT_TAKEN),
+                    "POP_TOP": build_instruction_pattern(Opcode.POP_TOP),
+                }
+            ).encode("iso8859-1")
+        ),
+        flags=re.DOTALL,
+    )
+    _PATTERN_1 = re.compile(
+        pattern=(
+            (
+                "%(NOT_TAKEN)s%(POP_TOP)s(.*?)(?:%(POP_TOP)s%(JUMP_BACKWARD)s)?"
+                % {
+                    "NOT_TAKEN": build_instruction_pattern(Opcode.NOT_TAKEN),
+                    "POP_TOP": build_instruction_pattern(Opcode.POP_TOP),
+                    "JUMP_BACKWARD": build_instruction_pattern(Opcode.JUMP_BACKWARD),
+                }
+            ).encode("iso8859-1")
+        ),
+        flags=re.DOTALL,
+    )
+elif sys.version_info >= (3, 13):
+    # ```
+    #     LOAD_GLOBAL ? (defer)
+    #     COPY
+    # --> TO_BOOL
+    #     POP_JUMP_IF_FALSE ?
+    #     POP_TOP
+    #     <???>
+    # ```
+
+    _PATTERN_0 = re.compile(
+        pattern=(
+            (
+                "%(TO_BOOL)s(%(POP_JUMP_IF_FALSE)s)(%(POP_TOP)s.*)"
+                % {
+                    "TO_BOOL": build_instruction_pattern(Opcode.TO_BOOL),
+                    "POP_JUMP_IF_FALSE": build_instruction_pattern(Opcode.POP_JUMP_IF_FALSE),
+                    "POP_TOP": build_instruction_pattern(Opcode.POP_TOP),
+                }
+            ).encode("iso8859-1")
+        ),
+        flags=re.DOTALL,
+    )
+    _PATTERN_1 = re.compile(
+        pattern=(
+            (
+                "%(POP_TOP)s(.*?)(?:%(POP_TOP)s%(JUMP_BACKWARD)s)?"
+                % {
+                    "POP_TOP": build_instruction_pattern(Opcode.POP_TOP),
+                    "JUMP_BACKWARD": build_instruction_pattern(Opcode.JUMP_BACKWARD),
+                }
+            ).encode("iso8859-1")
+        ),
+        flags=re.DOTALL,
+    )
+elif sys.version_info >= (3, 12):
+    # ```
+    #     LOAD_GLOBAL ? (defer)
+    #     COPY
+    # --> POP_JUMP_IF_FALSE ?
+    #     POP_TOP
+    #     <???>
+    # ```
+
+    _PATTERN_0 = re.compile(
+        pattern=(
+            (
+                "(%(POP_JUMP_IF_FALSE)s)(%(POP_TOP)s.*)"
+                % {
+                    "POP_JUMP_IF_FALSE": build_instruction_pattern(Opcode.POP_JUMP_IF_FALSE),
+                    "POP_TOP": build_instruction_pattern(Opcode.POP_TOP),
+                }
+            ).encode("iso8859-1")
+        ),
+        flags=re.DOTALL,
+    )
+    _PATTERN_1 = re.compile(
+        pattern=(("%(POP_TOP)s(.*)" % {"POP_TOP": build_instruction_pattern(Opcode.POP_TOP)}).encode("iso8859-1")),
+        flags=re.DOTALL,
+    )
+elif sys.version_info >= (3, 11):
+    # ```
+    #     LOAD_GLOBAL ? (defer)
+    # --> JUMP_IF_FALSE_OR_POP ?
+    #     <???>
+    # ```
+
+    _PATTERN_0 = re.compile(
+        pattern=(
+            (
+                "(%(JUMP_IF_FALSE_OR_POP)s)(.*)"
+                % {"JUMP_IF_FALSE_OR_POP": build_instruction_pattern(Opcode.JUMP_IF_FALSE_OR_POP)}
+            ).encode("iso8859-1")
+        ),
+        flags=re.DOTALL,
+    )
+    _PATTERN_1 = re.compile(pattern="(.*)".encode("iso8859-1"), flags=re.DOTALL)
+
+
 class Defer:
     @staticmethod
     def __bool__() -> Literal[False]:
@@ -145,127 +264,6 @@ class Defer:
         deferred_actions.append(deferred_call)
 
         return False
-
-
-if sys.version_info >= (3, 15):
-    raise NotImplementedError("Python > 3.14 is not supported yet.")
-elif sys.version_info >= (3, 14):
-    # ```
-    #     LOAD_GLOBAL ? (defer)
-    #     COPY
-    # --> TO_BOOL
-    #     POP_JUMP_IF_FALSE ?
-    #     NOT_TAKEN
-    #     POP_TOP
-    #     <???>
-    # ```
-
-    _PATTERN_0 = re.compile(
-        pattern=(
-            (
-                "%(TO_BOOL)s(%(POP_JUMP_IF_FALSE)s)(%(NOT_TAKEN)s%(POP_TOP)s.*)"
-                % {
-                    "TO_BOOL": build_instruction_pattern(Opcode.TO_BOOL),
-                    "POP_JUMP_IF_FALSE": build_instruction_pattern(Opcode.POP_JUMP_IF_FALSE),
-                    "NOT_TAKEN": build_instruction_pattern(Opcode.NOT_TAKEN),
-                    "POP_TOP": build_instruction_pattern(Opcode.POP_TOP),
-                }
-            ).encode("iso8859-1")
-        ),
-        flags=re.DOTALL,
-    )
-    _PATTERN_1 = re.compile(
-        pattern=(
-            (
-                "%(NOT_TAKEN)s%(POP_TOP)s(.*?)(?:%(POP_TOP)s%(JUMP_BACKWARD)s)?"
-                % {
-                    "NOT_TAKEN": build_instruction_pattern(Opcode.NOT_TAKEN),
-                    "POP_TOP": build_instruction_pattern(Opcode.POP_TOP),
-                    "JUMP_BACKWARD": build_instruction_pattern(Opcode.JUMP_BACKWARD),
-                }
-            ).encode("iso8859-1")
-        ),
-        flags=re.DOTALL,
-    )
-elif sys.version_info >= (3, 13):
-    # ```
-    #     LOAD_GLOBAL ? (defer)
-    #     COPY
-    # --> TO_BOOL
-    #     POP_JUMP_IF_FALSE ?
-    #     POP_TOP
-    #     <???>
-    # ```
-
-    _PATTERN_0 = re.compile(
-        pattern=(
-            (
-                "%(TO_BOOL)s(%(POP_JUMP_IF_FALSE)s)(%(POP_TOP)s.*)"
-                % {
-                    "TO_BOOL": build_instruction_pattern(Opcode.TO_BOOL),
-                    "POP_JUMP_IF_FALSE": build_instruction_pattern(Opcode.POP_JUMP_IF_FALSE),
-                    "POP_TOP": build_instruction_pattern(Opcode.POP_TOP),
-                }
-            ).encode("iso8859-1")
-        ),
-        flags=re.DOTALL,
-    )
-    _PATTERN_1 = re.compile(
-        pattern=(
-            (
-                "%(POP_TOP)s(.*?)(?:%(POP_TOP)s%(JUMP_BACKWARD)s)?"
-                % {
-                    "POP_TOP": build_instruction_pattern(Opcode.POP_TOP),
-                    "JUMP_BACKWARD": build_instruction_pattern(Opcode.JUMP_BACKWARD),
-                }
-            ).encode("iso8859-1")
-        ),
-        flags=re.DOTALL,
-    )
-elif sys.version_info >= (3, 12):
-    # ```
-    #     LOAD_GLOBAL ? (defer)
-    #     COPY
-    # --> POP_JUMP_IF_FALSE ?
-    #     POP_TOP
-    #     <???>
-    # ```
-
-    _PATTERN_0 = re.compile(
-        pattern=(
-            (
-                "(%(POP_JUMP_IF_FALSE)s)(%(POP_TOP)s.*)"
-                % {
-                    "POP_JUMP_IF_FALSE": build_instruction_pattern(Opcode.POP_JUMP_IF_FALSE),
-                    "POP_TOP": build_instruction_pattern(Opcode.POP_TOP),
-                }
-            ).encode("iso8859-1")
-        ),
-        flags=re.DOTALL,
-    )
-    _PATTERN_1 = re.compile(
-        pattern=(("%(POP_TOP)s(.*)" % {"POP_TOP": build_instruction_pattern(Opcode.POP_TOP)}).encode("iso8859-1")),
-        flags=re.DOTALL,
-    )
-elif sys.version_info >= (3, 11):
-    # ```
-    #     LOAD_GLOBAL ? (defer)
-    # --> JUMP_IF_FALSE_OR_POP ?
-    #     <???>
-    # ```
-
-    _PATTERN_0 = re.compile(
-        pattern=(
-            (
-                "(%(JUMP_IF_FALSE_OR_POP)s)(.*)"
-                % {"JUMP_IF_FALSE_OR_POP": build_instruction_pattern(Opcode.JUMP_IF_FALSE_OR_POP)}
-            ).encode("iso8859-1")
-        ),
-        flags=re.DOTALL,
-    )
-    _PATTERN_1 = re.compile(pattern="(.*)".encode("iso8859-1"), flags=re.DOTALL)
-else:
-    raise NotImplementedError("Python < 3.11 is not supported.")
 
 
 @final
