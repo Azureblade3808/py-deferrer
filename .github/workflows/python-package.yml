@@ -156,4 +156,4 @@ jobs:
 
       - name: Coveralls
         if: ${{ startsWith(matrix.os, 'ubuntu') }}
-        uses: coverallsapp/github-action@main.3.0          
+        uses: coverallsapp/github-action@main         
