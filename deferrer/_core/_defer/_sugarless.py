@@ -66,7 +66,7 @@ class _DeferredCallable(DeferredAction, Generic[_P]):
             assert traceback is not None
 
             if traceback.tb_next is not None:
-                # This `TypeError` was raised by user. We should not do anthing special.
+                # This `TypeError` was raised by user. We should not do anything special.
                 raise
 
             # This `TypeError` was raised on function call, which means that there was a signature error.

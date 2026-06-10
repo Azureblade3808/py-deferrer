@@ -73,7 +73,7 @@ class Test__defer:
             _()
 
     @staticmethod
-    @pytest.mark.skipif(sys.version_info >= (3, 12), reason="supported on new python")
+    @pytest.mark.skipif(sys.version_info >= (3, 12), reason="supported in new python")
     def test__is_forbidden_at_function_level_in_old_python() -> None:
         """
         `defer_scope` must be used for `defer` to work in Python older
@@ -1246,9 +1246,9 @@ class Test__defer:
         nums = []
 
         def f() -> None:
-            # This is a cell variable with no value
+            # This is a cell variable with no value.
             n0: Never
-            # This is a cell variable with value
+            # This is a cell variable with value.
             i0 = 1
 
             def f1() -> None:
@@ -1257,9 +1257,9 @@ class Test__defer:
                 # This is a free variable with value.
                 nonlocal i0
 
-                # This is a cell variable with no value
+                # This is a cell variable with no value.
                 n1: Never
-                # This is a cell variable with value
+                # This is a cell variable with value.
                 i1 = 2
 
                 def f2() -> None:

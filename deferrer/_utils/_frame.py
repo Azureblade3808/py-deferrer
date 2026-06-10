@@ -141,7 +141,7 @@ _PATTERN = re.compile(
             build_instruction_pattern(Opcode.STORE_NAME, 1),
             # "LOAD_CONST 0 {qualname}".
             build_instruction_pattern(Opcode.LOAD_CONST, 0),
-            # "STORE_NAME 2 (__qualname__)"
+            # "STORE_NAME 2 (__qualname__)".
             build_instruction_pattern(Opcode.STORE_NAME, 2),
         ]).encode("iso8859-1")
     ),

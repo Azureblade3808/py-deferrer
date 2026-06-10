@@ -150,7 +150,7 @@ def ensure_deferred_actions(
     *,
     # We are using a newly created `object` instance as a secret key in local scopes so that it will never conflict with
     # any existing key.
-    # It is intentially typed as `Never` so that it will never be assigned another value when the function is getting
+    # It is intentionally typed as `Never` so that it will never be assigned another value when the function is getting
     # called.
     __KEY__: Never = cast("Any", object()),  # pyright: ignore[reportCallInDefaultInitializer]
 ) -> DeferredActions:
