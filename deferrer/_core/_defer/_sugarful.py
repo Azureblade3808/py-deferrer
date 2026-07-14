@@ -23,7 +23,7 @@ _MISSING = cast("Any", object())
 
 
 assert not sys.version_info < (3, 11), "Python < 3.11 is not supported."
-assert not sys.version_info >= (3, 15), "Python >= 3.15 is not supported yet."
+assert not sys.version_info >= (3, 16), "Python >= 3.16 is not supported yet."
 if sys.version_info >= (3, 14):
     # ```
     #     LOAD_GLOBAL ? (defer)
